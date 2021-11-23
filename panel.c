@@ -57,6 +57,9 @@ static void _MouseCallbackHandler(GLFWwindow* window, int button, int action, in
     SignalFire(&MouseButtonInput, window, button, action, mods);
 }
 static void _ScrollCallbackHandler(GLFWwindow* window, double xoffset, double yoffset) {
+    // Call Static Hanlders
+    cameraScrollInput(window, xoffset, yoffset);
+    // Signal Dynamic Handlers
     SignalFire(&ScrollInput, window, xoffset, yoffset);
 }
 static void _CursorCallbackHandler(GLFWwindow* window, double xpos, double ypos) {
@@ -64,6 +67,11 @@ static void _CursorCallbackHandler(GLFWwindow* window, double xpos, double ypos)
     cameraCursorInput(window, xpos, ypos);
     // Signal Dynamic Handlers
     SignalFire(&CursorInput, window, xpos, ypos);
+}
+
+
+void display() {
+
 }
 
 
@@ -88,7 +96,10 @@ int main() {
     glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE);
     
     window = glfwCreateWindow(windowX, windowY, "Multi_verse DeliveryService", NULL, NULL);
-    if (!window) exit(EXIT_FAILURE);
+    if (!window) { 
+        glfwTerminate();
+        exit(EXIT_FAILURE);
+    }
 
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);

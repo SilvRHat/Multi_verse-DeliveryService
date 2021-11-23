@@ -1,14 +1,14 @@
 #include "linmath.h"
 #include "game.h"
 
-void cube(vec3 size, vec3 pos, vec3 orien) {
+void cube(vec3 size, vec3 position, vec3 orientation) {
     glPushMatrix();
     // Place cube
-    glTranslated(pos[0],pos[1],pos[2]);
-    glRotated(orien[0], 1,0,0);
-    glRotated(orien[1], 0,1,0);
-    glRotated(orien[2], 0,0,1);
-    glScaled(.5*size[0], .5*size[1], .5*size[2]);
+    glTranslated(position[0],position[1],position[2]);
+    glRotated(orientation[1], 0,1,0);
+    glRotated(orientation[0], 1,0,0);
+    glRotated(orientation[2], 0,0,1);
+    glScaled(size[0]/2.0, size[1]/2.0, size[2]/2.0);
 
     glBegin(GL_QUADS);
     //  Front

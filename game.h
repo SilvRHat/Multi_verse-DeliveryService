@@ -26,5 +26,7 @@
 extern struct signal   
     KeyInput, MouseButtonInput, ScrollInput, CursorInput;
 
+#define DEVMODE 1
+
 
 #endif

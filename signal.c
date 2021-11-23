@@ -6,7 +6,8 @@
 
 
 // SOURCE CODE
-// SignalFire - Prompts invokation on functions connected to signal
+// SignalFire
+    // @brief Prompts invokation on functions connected to signal
     // @param s - Signal to fire functions connect on
     // @param ... - Arguments to pass in as a va_list
 void SignalFire(struct signal *s, ...) {
@@ -19,10 +20,10 @@ void SignalFire(struct signal *s, ...) {
         va_end(args);
         i++;
     }
-    
 }
 
-// SignalConnect - Connects a function to a signal
+// SignalConnect 
+    // @brief Connects a function to a signal
     // @param s - Signal to bind function with
     // @param func - Function to bind onto signal
 int SignalConnect(struct signal *s, void* func) {
@@ -34,7 +35,8 @@ int SignalConnect(struct signal *s, void* func) {
     return 0;
 }
 
-// SignalDisconnect - Disconnects a function from the signal
+// SignalDisconnect
+    // @brief Disconnects a function from the signal
     // @param s - Signal to disconnect function from
     // @param func - Function to disconnect
 int SignalDisconnect(struct signal *s, void* func) {
@@ -52,7 +54,8 @@ int SignalDisconnect(struct signal *s, void* func) {
     return -1;
 }
 
-// Signal Destroy - Erases references to any connected functions
+// Signal Destroy
+    // @brief Erases references to any connected functions
     // @param s - Signal to clean contents of
 void SignalDestroy(struct signal *s) {
     for (int i=0; i<MAX_SIGNAL_CONNECTIONS; i++)

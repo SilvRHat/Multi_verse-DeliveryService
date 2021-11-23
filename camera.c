@@ -55,13 +55,9 @@ void cameraInit(GLFWwindow* window) {
     Camera.ViewVerse = 0;
     Camera.Name = "CurrentCamera";
 
-    mat4x4_translate(Camera.CFrame, 1, 1, 1);
+    mat4x4_translate(Camera.CFrame, 0, 0, 0);
     mat4x4_dup(Camera.ViewCFrame, Camera.CFrame);
     mat4x4_translate_in_place(Camera.ViewCFrame, 0,0, -Camera.Focus);
-
-
-    //SignalConnect(&KeyInput, cameraKeyInput);
-    //SignalConnect(&CursorInput, cameraCursorInput);
 }
 
 
@@ -69,10 +65,10 @@ void cameraStep(GLFWwindow* window, double t, double step) {
     vec4 cam_pos;
     mat4x4 cam_rot, m;
 
+    // TODO Character Movement
     //double forward = glfwGetKey(window, GLFW_KEY_W) - glfwGetKey(window, GLFW_KEY_S);
     //double right = glfwGetKey(window, GLFW_KEY_A) - glfwGetKey(window, GLFW_KEY_D);
 
-    
     // Reset orientation / Save translation
     mat4x4_col(cam_pos, Camera.CFrame, 3);
     mat4x4_translate(Camera.CFrame, cam_pos[0], cam_pos[1], cam_pos[2]);
@@ -115,12 +111,16 @@ void cameraCursorInput(GLFWwindow* window, double xpos, double ypos) {
 
     dx = xpos - xpos0;
     dy = ypos - ypos0;
-    if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)) {
+    if ((DEVMODE) && (   
+            glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) || 
+            glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE)
+        )
+    ){
         if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT)) {
             // Translate
             mat4x4 m;
-            mat4x4_translate(m, dx * Camera.Focus / 100.0, dy * Camera.Focus / 100.0, 0);
-            mat4x4_mul(Camera.CFrame, Camera.CFrame, m);
+            mat4x4_translate(m, dx * Camera.Focus / 500.0, -dy * Camera.Focus / 500.0, 0);
+            mat4x4_mul(Camera.CFrame, m, Camera.CFrame);
         
         } else {
             // Rotate
@@ -133,3 +133,6 @@ void cameraCursorInput(GLFWwindow* window, double xpos, double ypos) {
     ypos0 = ypos;
 }
 
+void cameraScrollInput(GLFWwindow* window, double xoffset, double yoffset) {
+    Camera.Focus = clamp(Camera.Focus - (yoffset/2.0), MIN_FOCUS, MAX_FOCUS);
+}
