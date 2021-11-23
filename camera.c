@@ -118,6 +118,9 @@ void cameraCursorInput(GLFWwindow* window, double xpos, double ypos) {
     if (glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT)) {
         if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT)) {
             // Translate
+            mat4x4 m;
+            mat4x4_translate(m, dx * Camera.Focus / 100.0, dy * Camera.Focus / 100.0, 0);
+            mat4x4_mul(Camera.CFrame, Camera.CFrame, m);
         
         } else {
             // Rotate
