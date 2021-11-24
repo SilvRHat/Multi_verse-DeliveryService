@@ -8,8 +8,25 @@
 #define inline __inline
 #endif
 
+#define TO_RAD M_PI/180.0
+#define TO_DEG 180.0/M_PI
+#define clamp(v,min,max) \
+    ({\
+        __typeof__ (v) _v = (v);\
+        __typeof__ (min) _min = (min);\
+        __typeof__ (max) _max = (max);\
+        __typeof__ (v) _v1 = (_v > _min ? _v : _min);\
+        _v1 < _max ? _v1 : _max; \
+    })
+
 #define LINMATH_H_DEFINE_VEC(n) \
 typedef float vec##n[n]; \
+static inline void vec##n##_zero(vec##n r) \
+{ \
+	int i; \
+	for(i=0; i<n; ++i) \
+		r[i] = 0.f; \
+} \
 static inline void vec##n##_add(vec##n r, vec##n const a, vec##n const b) \
 { \
 	int i; \

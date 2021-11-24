@@ -3,6 +3,8 @@
 
 // Camera Controller
 
+
+// DEPENDENCIES
 #include "linmath.h"
 #include "game.h"
 #include "camera.h"
@@ -10,39 +12,11 @@
 #include "camera.h"
 
 #include <math.h>
-#include<stdio.h>
-
-#define TO_RAD M_PI/180.0
-#define TO_DEG 180.0/M_PI
-#define clamp(v,min,max) \
-    ({\
-        __typeof__ (v) _v = (v);\
-        __typeof__ (min) _min = (min);\
-        __typeof__ (max) _max = (max);\
-        __typeof__ (v) _v1 = (_v > _min ? _v : _min);\
-        _v1 < _max ? _v1 : _max; \
-    })
+#include <stdio.h>
 
 
 // STATE GLOBALS
-struct camInst {
-    char* Name;
-    mat4x4 CFrame, ViewCFrame;
-    int HomeVerse, ViewVerse;
-    double Focus,   // Distance
-           az,      // Azimuth Angle
-           ph;      // Inclination Angle
-};
-typedef struct camInst CameraClass;
-CameraClass Camera;
-
-// CONFIG
-#define MAX_INCLINATION_ANG 360
-#define MIN_FOCUS 1
-#define MAX_FOCUS 25
-
-
-
+private CameraClass Camera;
 
 
 
@@ -89,15 +63,6 @@ void cameraStep(GLFWwindow* window, double t, double step) {
     mat4x4_translate(m,0,0,-Camera.Focus);
     mat4x4_mul(Camera.ViewCFrame, m, Camera.ViewCFrame);
     glMultMatrixf((GLfloat*) Camera.ViewCFrame);
-}
-
-
-void cameraKeyInput(va_list args) {
-    GLFWwindow* window = va_arg(args, GLFWwindow*);
-    int key = va_arg(args, int);
-    int scancode = va_arg(args, int); 
-    int action = va_arg(args, int);
-    int mods = va_arg(args, int);
 }
 
 

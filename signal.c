@@ -10,7 +10,7 @@
     // @brief Prompts invokation on functions connected to signal
     // @param s - Signal to fire functions connect on
     // @param ... - Arguments to pass in as a va_list
-void SignalFire(struct signal *s, ...) {
+void SignalFire(signal *s, ...) {
     int i=0;
     va_list args;
     
@@ -26,7 +26,7 @@ void SignalFire(struct signal *s, ...) {
     // @brief Connects a function to a signal
     // @param s - Signal to bind function with
     // @param func - Function to bind onto signal
-int SignalConnect(struct signal *s, void* func) {
+int SignalConnect(signal *s, void* func) {
     if (s->_connections+1==MAX_SIGNAL_CONNECTIONS)
         return -1;
     
@@ -39,7 +39,7 @@ int SignalConnect(struct signal *s, void* func) {
     // @brief Disconnects a function from the signal
     // @param s - Signal to disconnect function from
     // @param func - Function to disconnect
-int SignalDisconnect(struct signal *s, void* func) {
+int SignalDisconnect(signal *s, void* func) {
     for (int i=0; i<s->_connections; i++) {
         if (s->_functions[i]!=func) 
             continue;
@@ -57,7 +57,7 @@ int SignalDisconnect(struct signal *s, void* func) {
 // Signal Destroy
     // @brief Erases references to any connected functions
     // @param s - Signal to clean contents of
-void SignalDestroy(struct signal *s) {
+void SignalDestroy(signal *s) {
     for (int i=0; i<MAX_SIGNAL_CONNECTIONS; i++)
         s->_functions[i]=NULL;
     s->_connections=0;
@@ -82,7 +82,7 @@ int bar(va_list args) {
 }
 
 int main() {
-    struct signal s;
+    signal s;
     int x=11, y=5;
 
     SignalConnect(&s, foo);

@@ -23,7 +23,7 @@
 
 
 // GLOBALS
-extern struct signal   
+extern signal   
     KeyInput, MouseButtonInput, ScrollInput, CursorInput;
 
 #define DEVMODE 1

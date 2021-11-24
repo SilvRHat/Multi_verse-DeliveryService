@@ -12,7 +12,8 @@
 #include "game.h"       // Graphics / Globals
 #include "signal.h"     // Signals
 #include "camera.h"     // Camera
-#include "linmath.h"
+#include "linmath.h"    // Vectors/ Matrices
+#include "render.h"     // Render world
 
 #include "verse0.h"
 
@@ -20,10 +21,10 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-struct signal   KeyInput = NewSignal,
-                MouseButtonInput = NewSignal,
-                ScrollInput = NewSignal,
-                CursorInput = NewSignal;
+signal  KeyInput = NewSignal,
+        MouseButtonInput = NewSignal,
+        ScrollInput = NewSignal,
+        CursorInput = NewSignal;
 
 
 
@@ -70,12 +71,6 @@ static void _CursorCallbackHandler(GLFWwindow* window, double xpos, double ypos)
 }
 
 
-void display() {
-
-}
-
-
-
 int main() {
     GLFWwindow* window;
     int windowX = 1080, windowY = 720;
@@ -117,6 +112,7 @@ int main() {
 
     // Init
     cameraInit(window);
+    renderInit(window);
 
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
@@ -134,43 +130,13 @@ int main() {
         cameraStep(window, t, dt);
 
         // Render Scene
-        {
-            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-            
-            cube((vec3){1,1,1}, (vec3){-2,0,0}, (vec3){0,0,0});
-            cube((vec3){1,1,1}, (vec3){2,0,0}, (vec3){0,0,0});
-            cube((vec3){1,1,1}, (vec3){0,-2,0}, (vec3){0,0,0});
-            cube((vec3){1,1,1}, (vec3){0,2,0}, (vec3){0,0,0});
-            cube((vec3){1,1,1}, (vec3){0,0,2}, (vec3){0,0,0});
-            cube((vec3){1,1,1}, (vec3){0,0,-2}, (vec3){0,0,0});
-            
-        }
-        {
-            const double len=2.0;  //  Length of axes
-            glBegin(GL_LINES);
-            glVertex3d(0.0,0.0,0.0);
-            glVertex3d(len,0.0,0.0);
-            glVertex3d(0.0,0.0,0.0);
-            glVertex3d(0.0,len,0.0);
-            glVertex3d(0.0,0.0,0.0);
-            glVertex3d(0.0,0.0,len);
-            glEnd();
-            //  Label axes
-            
-            //  Show quads
-            glPushMatrix();
-            
-            glPopMatrix();
-        }
-
+        renderStep(window, t, dt);
+        
         // Input
-        //printf("A %lf\n", t-glfwGetTime()); t=glfwGetTime();
+        
         
         glfwSwapBuffers(window);
-        //printf("B %lf\n", t-glfwGetTime()); t=glfwGetTime();
         glfwPollEvents();
-        //printf("C %lf\n", t-glfwGetTime()); t=glfwGetTime();
-        
     }
 
     // Termination

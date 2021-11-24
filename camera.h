@@ -1,6 +1,7 @@
 // Multi_verse DeliveryService 
 // Gavin Zimmerman
 
+// Camera Controller
 #ifndef CAMERA_H
 #define CAMERA_H
 
@@ -14,6 +15,21 @@
 
 
 // CLASSES
+struct camInst {
+    char* Name;
+    mat4x4 CFrame, ViewCFrame;
+    int HomeVerse, ViewVerse;
+    double Focus,   // Distance
+           az,      // Azimuth Angle
+           ph;      // Inclination Angle
+};
+typedef struct camInst CameraClass;
+
+
+// CONFIG
+#define MAX_INCLINATION_ANG 360
+#define MIN_FOCUS 1
+#define MAX_FOCUS 25
 
 
 // MEMBERS

@@ -1,3 +1,46 @@
+# Multi_verse DeliveryService
+Developed by Gavin Zimmerman
+
+This is my submission for a final project in a Computer Graphics course taught at Univeristy of Colorado, Boulder by Willem A. (Vlakkies) Schreuder.
+
+My motivation for developing Mv-DS was to create a unique game based soley around graphics and various styles. My main inspiration for developing worlds of differing styles was from Spider-Man: Into the Spider-Verse. So I set out to develop a mail delivery robot that travels around the multi-verse delivering messages from worlds of every style.
+
+
+## Developer Status
+Estimated Progress [20%]
+Currently, I am developing the framework of this project. Setup still required includes:
+ - Arbitrarily rendering scenes
+ - Jump logic
+ - OpenGL 4.0 Syntax
+ - Shaders
+ - Character Controller
+
+
+## Dependencies
+ - OpenGL 2.0+
+ - GLFW 3.0+
+ - MacOS X / Linux  Operating System
+    - Only tested on MacOS X thus far
+
+## Running
+Running the program
+To compile, run: <code>make</code>
+To run program, run: <code>./Mv-DS</code>
+
+
+## Controls
+    Control                     Description
+-   MouseWheel                  Zoom In/ Out
+-   Right Mouse Button          Move Camera (DEV MODE)
+-   Middle Mouse Button         Move Camera (DEV MODE)
+
+
+## Documentation
+The following documents some of my design considerations, implementation, and why this project deserves an A grade.
+
+### Summary
+
+
 
 
 # Documentation Notes

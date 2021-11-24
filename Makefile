@@ -4,7 +4,7 @@
 # Source
 SRC = panel.c signal.c camera.c verse0.c
 HDR = game.h signal.h camera.h verse0.h linmath.h
-EXE = MvDS0
+EXE = Mv-DS
 
 all: $(EXE)
 SRCO = $(SRC:.c=.o)

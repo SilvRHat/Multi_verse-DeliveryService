@@ -11,17 +11,18 @@
 
 // CLASSES
 #define MAX_SIGNAL_CONNECTIONS 64
-struct signal {
+struct signal_s {
     int _connections;
     void* _functions[MAX_SIGNAL_CONNECTIONS];
 };
+typedef struct signal_s signal;
 #define NewSignal {0, {NULL}}
 
 
 // MEMBERS
-void SignalFire(struct signal *s, ...);
-int SignalConnect(struct signal *s, void* func);
-int SignalDisconnect(struct signal *s, void* func);
-void SignalDestroy(struct signal *s);
+void SignalFire(signal *s, ...);
+int SignalConnect(signal *s, void* func);
+int SignalDisconnect(signal *s, void* func);
+void SignalDestroy(signal *s);
 
 #endif
