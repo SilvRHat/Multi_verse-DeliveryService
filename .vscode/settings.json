@@ -5,6 +5,7 @@
         "string": "c",
         "vector": "c",
         "game.h": "c",
-        "camera.h": "c"
+        "camera.h": "c",
+        "render.h": "c"
     }
 }

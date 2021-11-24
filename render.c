@@ -1,21 +1,19 @@
-// Multiverse Delivery_Service Game
-// Developed by Gavin Zimmerman
+// Multi_verse DeliveryService
+// Gavin Zimmerman
 
 // Render - World Controller
-
-
-// DEPENDENCIES
-#include "linmath.h"
 #include "render.h"
 
 
-// STATE STUFF
-VerseInstance Verses[10];
+// GLOBAL STATE
+static VerseInstance Verses[10];
+
 
 // SOURCE
 void renderInit(GLFWwindow* window) {
     // Initialize Verses
 }
+
 
 void renderStep(GLFWwindow* window, double t, double step) {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -34,6 +32,7 @@ void renderStep(GLFWwindow* window, double t, double step) {
     // Go through verses backwards and render from translation made
     // 
 }
+
 
 void renderverseex() {
     // IN

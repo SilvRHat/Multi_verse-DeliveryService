@@ -1,16 +1,23 @@
-# Multiverse Delivery Service Makefile
+# Multi_verse DeliveryService
 # Gavin Zimmerman
 
+
+# Makefile
+
 # Source
-SRC = panel.c signal.c camera.c verse0.c
-HDR = game.h signal.h camera.h verse0.h linmath.h
+SRC_MAIN = main.c 
+SRC_SYS = signal.c camera.c render.c objects.c
+SRC_VRS = home.c
+
+HDR = game.h signal.h camera.h render.h objects.h linmath.h home.h
 EXE = Mv-DS
 
 all: $(EXE)
-SRCO = $(SRC:.c=.o)
+SRCO = $(SRC_MAIN:.c=.o) $(SRC_SYS:.c=.o) $(SRC_VRS:.c=.o)
 CC = gcc
 
-DFLG = -DDEV_MODE
+DFLG = -DDEVMODE
+
 
 #  Msys/MinGW
 ifeq "$(OS)" "Windows_NT"

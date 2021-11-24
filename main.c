@@ -1,13 +1,7 @@
 // Multi_verse DeliveryService 
 // Gavin Zimmerman
 
-// PANEL SOURCE CODE
-    // Init / Management 
-    // Game cycle
-    // Define glfw callbacks
-    // Manage window control
-
-
+// Main / Panel Source
 // DEPENDENCIES
 #include "game.h"       // Graphics / Globals
 #include "signal.h"     // Signals
@@ -15,20 +9,46 @@
 #include "linmath.h"    // Vectors/ Matrices
 #include "render.h"     // Render world
 
-#include "verse0.h"
-
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
 
-signal  KeyInput = NewSignal,
-        MouseButtonInput = NewSignal,
-        ScrollInput = NewSignal,
-        CursorInput = NewSignal;
 
+SignalInstance  KeyInput = NewSignal,
+                MouseButtonInput = NewSignal,
+                ScrollInput = NewSignal,
+                CursorInput = NewSignal;
 
 
 // SOURCE
+// Input Callbacks
+static void KeyCallbackHandler(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    SignalFire(&KeyInput, window, key, scancode, action, mods);
+}
+
+
+static void MouseCallbackHandler(GLFWwindow* window, int button, int action, int mods) {
+    SignalFire(&MouseButtonInput, window, button, action, mods);
+}
+
+
+static void ScrollCallbackHandler(GLFWwindow* window, double xoffset, double yoffset) {
+    // Call Static Hanlders
+    cameraScrollInput(window, xoffset, yoffset);
+    // Signal Dynamic Handlers
+    SignalFire(&ScrollInput, window, xoffset, yoffset);
+}
+
+
+static void CursorCallbackHandler(GLFWwindow* window, double xpos, double ypos) {
+    // Call Static Hanlders
+    cameraCursorInput(window, xpos, ypos);
+    // Signal Dynamic Handlers
+    SignalFire(&CursorInput, window, xpos, ypos);
+}
+
+
+// GLFW / Window Callback
 void glfwErrorHandler(int code, const char* desc) {
     printf("ERROR %d: %s\n", code, (desc!=NULL)? desc: "GLFW Encountered an issue");
 }
@@ -47,30 +67,32 @@ void windowResize(GLFWwindow* window, int width, int height) {
     //glOrtho(-asp*dim,asp*dim,-dim,+dim,-dim,+dim);
     gluPerspective(60, asp, dim/8.0, 6*dim);
     glMatrixMode(GL_MODELVIEW);
-};
-
-
-// Input Callbacks
-static void _KeyCallbackHandler(GLFWwindow* window, int key, int scancode, int action, int mods) {
-    SignalFire(&KeyInput, window, key, scancode, action, mods);
-}
-static void _MouseCallbackHandler(GLFWwindow* window, int button, int action, int mods) {
-    SignalFire(&MouseButtonInput, window, button, action, mods);
-}
-static void _ScrollCallbackHandler(GLFWwindow* window, double xoffset, double yoffset) {
-    // Call Static Hanlders
-    cameraScrollInput(window, xoffset, yoffset);
-    // Signal Dynamic Handlers
-    SignalFire(&ScrollInput, window, xoffset, yoffset);
-}
-static void _CursorCallbackHandler(GLFWwindow* window, double xpos, double ypos) {
-    // Call Static Hanlders
-    cameraCursorInput(window, xpos, ypos);
-    // Signal Dynamic Handlers
-    SignalFire(&CursorInput, window, xpos, ypos);
 }
 
 
+void gameLoop(GLFWwindow* window) {
+    static double t0 = 0;
+    double t = glfwGetTime();
+    double dt = t - t0;
+    t0 = t;
+
+    // Camera
+    glLoadIdentity(); // TODO Remove
+    cameraStep(window, t, dt);
+
+    // Render Scene
+    renderStep(window, t, dt);
+    
+    // Input
+    glfwPollEvents();
+
+    // Swap Buffers
+    glfwSwapBuffers(window);
+}
+
+
+
+// Main
 int main() {
     GLFWwindow* window;
     int windowX = 1080, windowY = 720;
@@ -102,46 +124,29 @@ int main() {
     
     // Window refresh callbacks
     glfwSetWindowSizeCallback(window, windowResize);
-    // TODO     glfwSetWindowRefreshCallback(window, );
+    glfwSetWindowRefreshCallback(window, gameLoop);
     
     // Input Callbacks
-    glfwSetKeyCallback(window, _KeyCallbackHandler);
-    glfwSetMouseButtonCallback(window, _MouseCallbackHandler);
-    glfwSetScrollCallback(window, _ScrollCallbackHandler);
-    glfwSetCursorPosCallback(window, _CursorCallbackHandler);
+    glfwSetKeyCallback(window, KeyCallbackHandler);
+    glfwSetMouseButtonCallback(window, MouseCallbackHandler);
+    glfwSetScrollCallback(window, ScrollCallbackHandler);
+    glfwSetCursorPosCallback(window, CursorCallbackHandler);
 
     // Init
-    cameraInit(window);
-    renderInit(window);
-
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 
+    cameraInit(window);
+    renderInit(window);
+
 
     // Game Loop
-    double t0 = glfwGetTime();
     while(!glfwWindowShouldClose(window)) {
-        double t = glfwGetTime();
-        double dt = t - t0;
-        t0 = t;
-
-        // Camera
-        glLoadIdentity();
-        cameraStep(window, t, dt);
-
-        // Render Scene
-        renderStep(window, t, dt);
-        
-        // Input
-        
-        
-        glfwSwapBuffers(window);
-        glfwPollEvents();
+        gameLoop(window);
     }
 
     // Termination
     glfwDestroyWindow(window);
-
     glfwTerminate();
     return EXIT_SUCCESS;
 }

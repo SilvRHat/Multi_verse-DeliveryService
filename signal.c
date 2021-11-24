@@ -1,16 +1,18 @@
-// Signal - Source
-// Programming pattern to provide dynamic connections on callbacks
+// Signal Code Pattern Library
 // Gavin Zimmerman
 
+// Allows dynamic function calls
+
+// Signal Source
 #include "signal.h"
 
 
-// SOURCE CODE
+// SOURCE
 // SignalFire
     // @brief Prompts invokation on functions connected to signal
     // @param s - Signal to fire functions connect on
     // @param ... - Arguments to pass in as a va_list
-void SignalFire(signal *s, ...) {
+void SignalFire(SignalInstance *s, ...) {
     int i=0;
     va_list args;
     
@@ -26,7 +28,7 @@ void SignalFire(signal *s, ...) {
     // @brief Connects a function to a signal
     // @param s - Signal to bind function with
     // @param func - Function to bind onto signal
-int SignalConnect(signal *s, void* func) {
+int SignalConnect(SignalInstance *s, void* func) {
     if (s->_connections+1==MAX_SIGNAL_CONNECTIONS)
         return -1;
     
@@ -39,7 +41,7 @@ int SignalConnect(signal *s, void* func) {
     // @brief Disconnects a function from the signal
     // @param s - Signal to disconnect function from
     // @param func - Function to disconnect
-int SignalDisconnect(signal *s, void* func) {
+int SignalDisconnect(SignalInstance *s, void* func) {
     for (int i=0; i<s->_connections; i++) {
         if (s->_functions[i]!=func) 
             continue;
@@ -57,7 +59,7 @@ int SignalDisconnect(signal *s, void* func) {
 // Signal Destroy
     // @brief Erases references to any connected functions
     // @param s - Signal to clean contents of
-void SignalDestroy(signal *s) {
+void SignalDestroy(SignalInstance *s) {
     for (int i=0; i<MAX_SIGNAL_CONNECTIONS; i++)
         s->_functions[i]=NULL;
     s->_connections=0;
@@ -82,7 +84,7 @@ int bar(va_list args) {
 }
 
 int main() {
-    signal s;
+    SignalInstance s;
     int x=11, y=5;
 
     SignalConnect(&s, foo);

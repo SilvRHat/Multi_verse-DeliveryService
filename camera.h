@@ -18,7 +18,7 @@
 
 
 // CLASSES
-struct camInst {
+struct Camera_Instance_s {
     char* Name;
     mat4x4 CFrame, ViewCFrame;
     int HomeVerse, ViewVerse;
@@ -26,7 +26,7 @@ struct camInst {
            az,      // Azimuth Angle
            ph;      // Inclination Angle
 };
-typedef struct camInst CameraClass;
+typedef struct Camera_Instance_s CameraInstance;
 
 
 // CONFIG
@@ -40,5 +40,7 @@ void cameraInit(GLFWwindow* window);
 void cameraStep(GLFWwindow* window, double t, double step);
 void cameraCursorInput(GLFWwindow* window, double xpos, double ypos);
 void cameraScrollInput(GLFWwindow* window, double xoffset, double yoffset);
+void GetCameraView(mat4x4 CFrame, int* ViewVerse);
+void GetCameraFocus(mat4x4 CFrame, int* HomeVerse);
 
 #endif

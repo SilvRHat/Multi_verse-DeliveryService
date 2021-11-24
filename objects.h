@@ -1,24 +1,22 @@
-// Multiverse Delivery_Service Game
-// Developed by Gavin Zimmerman
+// Multi_verse DeliveryService
+// Gavin Zimmerman
 
+// Objects
 #ifndef OBJECTS_H
 #define OBJECTS_H
 
 // DEPENDENCIES
+#include "game.h"
 #include "linmath.h"
 #include "signal.h"
 
 
 
-
-// OBJECTS
-// The defined pieces that will allow a game to be made up
-
-// Simple datatypes
+// SIMPLE DATATYPES
 typedef GLubyte color3[3];
 
 
-
+// GAME INSTANCES
 // Part Instances
 struct PartInstance_s {
     // Book Keeping
@@ -40,6 +38,7 @@ struct PartInstance_s {
     // Collision Properties
 };
 typedef struct PartInstance_s PartInstance;
+
 
 // Simple Object Constructors
 PartInstance* empty();
@@ -71,12 +70,13 @@ void SetPosition(PartInstance* p, vec3 pos);
 void SetRotation(PartInstance* p, vec3 r);
 void SetTranslation(PartInstance* p, vec3 size, vec3 position, vec3 rotation);
 void SetMetaProperties(PartInstance* p, char* Name, char* ClassName, int HomeVerse);
-
 void RenderPartInstance(PartInstance* p);
 
 
 
-// Jumps
+
+
+// Jump Instances
 struct JumpInstance_s {};
 typedef struct JumpInstance_s JumpInstance;
 
@@ -91,7 +91,7 @@ struct VerseInstance_s {
     char* Name;
 
     void (*_RenderFunc) (GLFWwindow*, struct VerseInstance_s, double, double);
-    signal RenderStepped;
+    SignalInstance RenderStepped;
 
     PartInstance* Children[MAX_VERSE_INSTANCES];
     JumpInstance* Jumps[MAX_JUMP_INSTANCES];

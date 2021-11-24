@@ -10,19 +10,19 @@
 #include <stddef.h>
 
 // CLASSES
+#define NewSignal {0, {NULL}}
 #define MAX_SIGNAL_CONNECTIONS 64
-struct signal_s {
+struct SignalInstance_s {
     int _connections;
     void* _functions[MAX_SIGNAL_CONNECTIONS];
 };
-typedef struct signal_s signal;
-#define NewSignal {0, {NULL}}
+typedef struct SignalInstance_s SignalInstance;
 
 
 // MEMBERS
-void SignalFire(signal *s, ...);
-int SignalConnect(signal *s, void* func);
-int SignalDisconnect(signal *s, void* func);
-void SignalDestroy(signal *s);
+void SignalFire(SignalInstance *s, ...);
+int SignalConnect(SignalInstance *s, void* func);
+int SignalDisconnect(SignalInstance *s, void* func);
+void SignalDestroy(SignalInstance *s);
 
 #endif

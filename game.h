@@ -1,12 +1,14 @@
-// Multiverse Delivery_Service Game
-// Developed by Gavin Zimmerman
+// Multi_verse DeliveryService
+// Gavin Zimmerman
 
-// PROJECT HEADER
+// Mutli_verse DeliveryService Globals
 #ifndef MULTIVERSE_DELIVERY_SERVICE_H
 #define MULTIVERSE_DELIVERY_SERVICE_H
 
 
 // DEPENDENCIES
+#include "signal.h"
+
 // Graphics
 #ifdef USEGLEW
 #include <GL/glew.h>
@@ -23,9 +25,11 @@
 
 
 // GLOBALS
-extern signal   
+extern SignalInstance  
     KeyInput, MouseButtonInput, ScrollInput, CursorInput;
 
+
+// CONFIG
 #define DEVMODE 1
 
 

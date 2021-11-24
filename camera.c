@@ -1,15 +1,12 @@
-// Multiverse Delivery_Service Game
-// Developed by Gavin Zimmerman
+// Multi_verse DeliveryService
+// Gavin Zimmerman
 
-// Camera Controller
-
-
-// HEADER / DEPENDENCIES
+// Camera Controller Source
 #include "camera.h"
 
 
 // STATE GLOBALS
-static CameraClass Camera;
+static CameraInstance Camera;
 
 
 // SOURCE
@@ -30,10 +27,6 @@ void cameraInit(GLFWwindow* window) {
 void cameraStep(GLFWwindow* window, double t, double step) {
     vec4 cam_pos;
     mat4x4 cam_rot, m;
-
-    // TODO Character Movement
-    //double forward = glfwGetKey(window, GLFW_KEY_W) - glfwGetKey(window, GLFW_KEY_S);
-    //double right = glfwGetKey(window, GLFW_KEY_A) - glfwGetKey(window, GLFW_KEY_D);
 
     // Reset orientation / Save translation
     mat4x4_col(cam_pos, Camera.CFrame, 3);
@@ -68,10 +61,10 @@ void cameraCursorInput(GLFWwindow* window, double xpos, double ypos) {
 
     dx = xpos - xpos0;
     dy = ypos - ypos0;
-    if ((DEVMODE) && (   
-            glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) || 
-            glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE)
-        )
+#ifdef DEVMODE
+    if (
+        glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) || 
+        glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE)
     ){
         if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT)) {
             // Translate
@@ -86,10 +79,24 @@ void cameraCursorInput(GLFWwindow* window, double xpos, double ypos) {
             Camera.ph = clamp(Camera.ph, -MAX_INCLINATION_ANG*TO_RAD, MAX_INCLINATION_ANG*TO_RAD);
             Camera.az = fmod(Camera.az, 360.0*TO_RAD); Camera.ph = fmod(Camera.ph, 360.0*TO_RAD);
     }}
+#endif
     xpos0 = xpos;
     ypos0 = ypos;
 }
 
+
 void cameraScrollInput(GLFWwindow* window, double xoffset, double yoffset) {
     Camera.Focus = clamp(Camera.Focus - (yoffset/2.0), MIN_FOCUS, MAX_FOCUS);
+}
+
+
+void GetCameraView(mat4x4 CFrame, int* ViewVerse) {
+    mat4x4_dup(CFrame, Camera.ViewCFrame);
+    *ViewVerse = Camera.ViewVerse;
+};
+
+
+void GetCameraFocus(mat4x4 CFrame, int* HomeVerse) {
+    mat4x4_dup(CFrame, Camera.CFrame);
+    *HomeVerse = Camera.HomeVerse;
 }

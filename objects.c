@@ -2,16 +2,10 @@
 // Gavin Zimmerman
 
 // Objects Source
-
-// DEPENDENCIES
-#include "game.h"
 #include "objects.h"
-#include <math.h>
-
 
 
 // SOURCE
-
 PartInstance* empty() {
     PartInstance* inst = (PartInstance*) malloc(sizeof(PartInstance));
     NewInstance(inst);

@@ -1,4 +1,10 @@
-// Grabbed from GLFW source/dep; used in its examples
+// Linear Algebra / Math Library
+// Sourced from GLFW
+	// https://github.com/glfw/glfw/blob/master/deps/linmath.h
+
+// Minor Modifications made by Gavin Zimmerman
+
+
 #ifndef LINMATH_H
 #define LINMATH_H
 
@@ -18,6 +24,7 @@
         __typeof__ (v) _v1 = (_v > _min ? _v : _min);\
         _v1 < _max ? _v1 : _max; \
     })
+
 
 #define LINMATH_H_DEFINE_VEC(n) \
 typedef float vec##n[n]; \
