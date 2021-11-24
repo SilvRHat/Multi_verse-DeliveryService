@@ -1,13 +1,13 @@
 // Multi_verse DeliveryService
 // Gavin Zimmerman
 
-// Mutli_verse DeliveryService Globals
+// Mutli_verse DeliveryService
 #ifndef MULTIVERSE_DELIVERY_SERVICE_H
 #define MULTIVERSE_DELIVERY_SERVICE_H
 
-
 // DEPENDENCIES
 #include "signal.h"
+#define DEVMODE 1 // For .vscode
 
 // Graphics
 #ifdef USEGLEW
@@ -25,12 +25,9 @@
 
 
 // GLOBALS
+// Signals
 extern SignalInstance  
     KeyInput, MouseButtonInput, ScrollInput, CursorInput;
-
-
-// CONFIG
-#define DEVMODE 1
 
 
 #endif

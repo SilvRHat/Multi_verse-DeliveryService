@@ -12,30 +12,6 @@ PartInstance* empty() {
     return inst;
 }
 
-
-PartInstance* triangle(vec3 vert0, vec3 vert1, vec3 vert2) {
-    // TODO
-}
-
-
-PartInstance* plane(double size) {
-    PartInstance* inst = empty();
-    inst->ClassName="Plane";
-    // Generate vertices
-
-    return inst;
-}
-
-
-PartInstance* circle(int vertices, double radius) {
-    PartInstance* inst = empty();
-    inst->ClassName="Circle";
-    // Generate vertices
-
-    return inst;
-}
-
-
 PartInstance* cube(double size) {
     PartInstance* inst = empty();
     inst->ClassName="Cube";
@@ -74,7 +50,7 @@ void SetCFrame(PartInstance* p, mat4x4 cf) {
     // TODO
     // Find YXZ Euler Angles from Rotation Matrix
     // Credit: http://eecs.qmul.ac.uk/~gslabaugh/publications/euler.pdf
-    if (1 - abs(cf[0][2]) < 1e-3) {
+    if (1 - fabsf(cf[0][2]) < 1e-3) {
 
     }
     else { 
@@ -146,58 +122,29 @@ void SetMetaProperties(PartInstance* p, char* name, char* className, int homeVer
 }
 
 
-void _renderCube(vec3 size, vec3 position, vec3 orientation) {
-    glPushMatrix();
-    // Place cube
-    glTranslated(position[0],position[1],position[2]);
-    glRotated(orientation[1], 0,1,0);
-    glRotated(orientation[0], 1,0,0);
-    glRotated(orientation[2], 0,0,1);
-    glScaled(size[0]/2.0, size[1]/2.0, size[2]/2.0);
-
-    glBegin(GL_QUADS);
-    //  Front
-    glColor3ub(255, 0, 0);
-    glVertex3f(-1,-1, 1);
-    glVertex3f(+1,-1, 1);
-    glVertex3f(+1,+1, 1);
-    glVertex3f(-1,+1, 1);
-    //  Back
-    glColor3ub(255, 255, 0);
-    glVertex3f(+1,-1,-1);
-    glVertex3f(-1,-1,-1);
-    glVertex3f(-1,+1,-1);
-    glVertex3f(+1,+1,-1);
-    //  Right
-    glColor3ub(0, 255, 0);
-    glVertex3f(+1,-1,+1);
-    glVertex3f(+1,-1,-1);
-    glVertex3f(+1,+1,-1);
-    glVertex3f(+1,+1,+1);
-    //  Left
-    glColor3ub(0, 255, 255);
-    glVertex3f(-1,-1,-1);
-    glVertex3f(-1,-1,+1);
-    glVertex3f(-1,+1,+1);
-    glVertex3f(-1,+1,-1);
-    //  Top
-    glColor3ub(0, 0, 255);
-    glVertex3f(-1,+1,+1);
-    glVertex3f(+1,+1,+1);
-    glVertex3f(+1,+1,-1);
-    glVertex3f(-1,+1,-1);
-    //  Bottom
-    glColor3ub(255, 0, 255);
-    glVertex3f(-1,-1,-1);
-    glVertex3f(+1,-1,-1);
-    glVertex3f(+1,-1,+1);
-    glVertex3f(-1,-1,+1);
-    //  End
-    glEnd();
-    glPopMatrix();
+int VerseAddChild(VerseInstance v, PartInstance* p) {
+    printf("Adding to [%s]\n", v.Name);
+    for (int i=0; i<MAX_VERSE_INSTANCES; i++) {
+        if (v.Children[i]!=NULL)
+            continue;
+        printf("Child is [%p][%d]\n", v.Children[i], i);
+        v.Children[i] = p;
+        printf("Child is now [%p][%d]\n", v.Children[i], i);
+        printf("I make cube at [%d]\n", i);
+        printf("Cube is [%p]\n", p);
+        return 0;
+    }
+#ifdef DEVMODE
+    printf("Could not add child (%s) to verse (%s)\n", p->Name, v.Name);
+#endif
+    return -1;
 }
 
 
-void RenderPartInstance(PartInstance* p) {
-
+PartInstance* VerseFindFirstChild(VerseInstance v, char* Name) {
+    for (int i=0; i<MAX_VERSE_INSTANCES; i++) {
+        if ( (v.Children[i]!=NULL) && (strcmp(v.Children[i]->Name, Name)==0) )
+            return v.Children[i];
+    }
+    return NULL;
 }

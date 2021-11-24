@@ -38,6 +38,10 @@ To run program, run: <code>./Mv-DS</code>
 ## Documentation
 The following documents some of my design considerations, implementation, and why this project deserves an A grade.
 
+## Game Lore
+Coding what you like is fun - seriously! So in addition to code documentation I wanted to give personality, life, history to the project by introducing a backstory/ narrative/ lore section to the header files of all level source code.
+
+
 ### Summary
 
 

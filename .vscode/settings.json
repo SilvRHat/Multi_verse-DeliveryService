@@ -6,6 +6,9 @@
         "vector": "c",
         "game.h": "c",
         "camera.h": "c",
-        "render.h": "c"
+        "render.h": "c",
+        "unordered_map": "c",
+        "system_error": "c",
+        "string.h": "c"
     }
 }

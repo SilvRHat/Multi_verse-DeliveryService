@@ -56,19 +56,68 @@ void glfwErrorHandler(int code, const char* desc) {
 
 void windowResize(GLFWwindow* window, int width, int height) {
     double asp;
-    
+    // TODO : Replace with by window projection matrix
     glfwGetFramebufferSize(window, &width, &height);
     asp = (height>0)? (double)width/height : 1;
     
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    //gluPerspective(60, asp, 1/4, 20);
     double dim=5;
-    //glOrtho(-asp*dim,asp*dim,-dim,+dim,-dim,+dim);
-    gluPerspective(60, asp, dim/8.0, 6*dim);
+    glOrtho(-asp*dim,asp*dim,-dim,+dim,-dim,+dim);
+    //gluPerspective(60, asp, dim/8.0, 6*dim);
     glMatrixMode(GL_MODELVIEW);
 }
 
+void _cube(vec3 position, vec3 orientation, vec3 size) {
+    glPushMatrix();
+    // Place cube
+    glTranslated(position[0],position[1],position[2]);
+    glRotated(orientation[1], 0,1,0);
+    glRotated(orientation[0], 1,0,0);
+    glRotated(orientation[2], 0,0,1);
+    glScaled(size[0]/2.0, size[1]/2.0, size[2]/2.0);
+
+    glBegin(GL_QUADS);
+    //  Front
+    glColor3ub(255, 0, 0);
+    glVertex3f(-1,-1, 1);
+    glVertex3f(+1,-1, 1);
+    glVertex3f(+1,+1, 1);
+    glVertex3f(-1,+1, 1);
+    //  Back
+    glColor3ub(255, 255, 0);
+    glVertex3f(+1,-1,-1);
+    glVertex3f(-1,-1,-1);
+    glVertex3f(-1,+1,-1);
+    glVertex3f(+1,+1,-1);
+    //  Right
+    glColor3ub(0, 255, 0);
+    glVertex3f(+1,-1,+1);
+    glVertex3f(+1,-1,-1);
+    glVertex3f(+1,+1,-1);
+    glVertex3f(+1,+1,+1);
+    //  Left
+    glColor3ub(0, 255, 255);
+    glVertex3f(-1,-1,-1);
+    glVertex3f(-1,-1,+1);
+    glVertex3f(-1,+1,+1);
+    glVertex3f(-1,+1,-1);
+    //  Top
+    glColor3ub(0, 0, 255);
+    glVertex3f(-1,+1,+1);
+    glVertex3f(+1,+1,+1);
+    glVertex3f(+1,+1,-1);
+    glVertex3f(-1,+1,-1);
+    //  Bottom
+    glColor3ub(255, 0, 255);
+    glVertex3f(-1,-1,-1);
+    glVertex3f(+1,-1,-1);
+    glVertex3f(+1,-1,+1);
+    glVertex3f(-1,-1,+1);
+    //  End
+    glEnd();
+    glPopMatrix();
+}
 
 void gameLoop(GLFWwindow* window) {
     static double t0 = 0;
@@ -78,10 +127,18 @@ void gameLoop(GLFWwindow* window) {
 
     // Camera
     glLoadIdentity(); // TODO Remove
-    cameraStep(window, t, dt);
+    //cameraStep(window, t, dt);
 
     // Render Scene
-    renderStep(window, t, dt);
+    {
+        _cube((vec3) { 0, 0,-1}, (vec3) {0.0,0.0,0.0}, (vec3) {1.0,1.0,1.0});
+        _cube((vec3) { 0, 0, 1}, (vec3) {0.0,0.0,0.0}, (vec3) {1.0,1.0,1.0});
+        _cube((vec3) { 0,-1, 0}, (vec3) {0.0,0.0,0.0}, (vec3) {1.0,1.0,1.0});
+        _cube((vec3) { 0, 1, 0}, (vec3) {0.0,0.0,0.0}, (vec3) {1.0,1.0,1.0});
+        _cube((vec3) {-1, 0, 0}, (vec3) {0.0,0.0,0.0}, (vec3) {1.0,1.0,1.0});
+        _cube((vec3) { 1, 0, 0}, (vec3) {0.0,0.0,0.0}, (vec3) {1.0,1.0,1.0});
+    }
+    //renderStep(window, t, dt);
     
     // Input
     glfwPollEvents();
@@ -101,30 +158,25 @@ int main() {
 #ifdef USEGLEW
     if (glewInit()!=GLEW_OK) exit(-1);
 #endif
-
     if (!glfwInit()) {
         printf("    Error 0: Could not initialize glfw3\n");
         exit(EXIT_FAILURE);
     }
-
     glfwSetErrorCallback(glfwErrorHandler);
 
+    // Window creation
     glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
     glfwWindowHint(GLFW_DOUBLEBUFFER, GLFW_TRUE);
-    
     window = glfwCreateWindow(windowX, windowY, "Multi_verse DeliveryService", NULL, NULL);
     if (!window) { 
         glfwTerminate();
         exit(EXIT_FAILURE);
     }
-
     glfwMakeContextCurrent(window);
-    glfwSwapInterval(1);
-    windowResize(window, windowX, windowY);
     
     // Window refresh callbacks
     glfwSetWindowSizeCallback(window, windowResize);
-    glfwSetWindowRefreshCallback(window, gameLoop);
+    //glfwSetWindowRefreshCallback(window, gameLoop);
     
     // Input Callbacks
     glfwSetKeyCallback(window, KeyCallbackHandler);
@@ -132,20 +184,23 @@ int main() {
     glfwSetScrollCallback(window, ScrollCallbackHandler);
     glfwSetCursorPosCallback(window, CursorCallbackHandler);
 
-    // Init
+    // OpenGL
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 
+    // Controller Systems
     cameraInit(window);
-    renderInit(window);
+    //renderInit(window);
 
-
-    // Game Loop
+    // Game Loop 
+    glfwSwapInterval(1);
+    windowResize(window, windowX, windowY);
     while(!glfwWindowShouldClose(window)) {
         gameLoop(window);
     }
 
     // Termination
+    //renderExit(window);
     glfwDestroyWindow(window);
     glfwTerminate();
     return EXIT_SUCCESS;

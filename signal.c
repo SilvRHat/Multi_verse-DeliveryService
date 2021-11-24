@@ -9,9 +9,9 @@
 
 // SOURCE
 // SignalFire
-    // @brief Prompts invokation on functions connected to signal
-    // @param s - Signal to fire functions connect on
-    // @param ... - Arguments to pass in as a va_list
+    // @brief Invokes all bound functions connected to signal
+    // @param s Signal to fire functions connect on
+    // @param ... Arguments to pass in as a va_list
 void SignalFire(SignalInstance *s, ...) {
     int i=0;
     va_list args;
@@ -25,9 +25,10 @@ void SignalFire(SignalInstance *s, ...) {
 }
 
 // SignalConnect 
-    // @brief Connects a function to a signal
-    // @param s - Signal to bind function with
-    // @param func - Function to bind onto signal
+    // @brief Binds a provided function to the signal
+    // @param s Signal to bind function with
+    // @param func Function to bind onto signal
+    // @return If connection was successful
 int SignalConnect(SignalInstance *s, void* func) {
     if (s->_connections+1==MAX_SIGNAL_CONNECTIONS)
         return -1;
@@ -38,9 +39,10 @@ int SignalConnect(SignalInstance *s, void* func) {
 }
 
 // SignalDisconnect
-    // @brief Disconnects a function from the signal
-    // @param s - Signal to disconnect function from
-    // @param func - Function to disconnect
+    // @brief Unbinds a provided function from the signal if connected
+    // @param s Signal to disconnect function from
+    // @param func Function to disconnect
+    // @return If disconnection was successful
 int SignalDisconnect(SignalInstance *s, void* func) {
     for (int i=0; i<s->_connections; i++) {
         if (s->_functions[i]!=func) 
@@ -57,8 +59,8 @@ int SignalDisconnect(SignalInstance *s, void* func) {
 }
 
 // Signal Destroy
-    // @brief Erases references to any connected functions
-    // @param s - Signal to clean contents of
+    // @brief Unbinds all functions connected to the signal
+    // @param s Signal to clean contents of
 void SignalDestroy(SignalInstance *s) {
     for (int i=0; i<MAX_SIGNAL_CONNECTIONS; i++)
         s->_functions[i]=NULL;
@@ -66,7 +68,7 @@ void SignalDestroy(SignalInstance *s) {
 }
 
 
-
+// DOCUMENTATION
 // Test Program
 /*
 int foo(va_list args) { 

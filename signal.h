@@ -18,7 +18,6 @@ struct SignalInstance_s {
 };
 typedef struct SignalInstance_s SignalInstance;
 
-
 // MEMBERS
 void SignalFire(SignalInstance *s, ...);
 int SignalConnect(SignalInstance *s, void* func);

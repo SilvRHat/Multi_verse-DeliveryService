@@ -10,9 +10,15 @@
 #include "linmath.h"
 #include "objects.h"
 
+#include <string.h>
+
+// VERSES
+#include "home.h"
+
+
 // MEMBERS
 void renderInit(GLFWwindow* window);
+void renderExit(GLFWwindow* window);
 void renderStep(GLFWwindow* window, double t, double step);
-
 
 #endif
