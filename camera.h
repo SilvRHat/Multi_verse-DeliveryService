@@ -7,11 +7,14 @@
 
 
 // DEPENDENCIES
+#include "linmath.h"
 #include "game.h"
-#include "signal.h"
+#include "camera.h"
+#include "objects.h"
 
-#include <stdarg.h>
-#include <stddef.h>
+#include <math.h>
+#include <stdio.h>
+
 
 
 // CLASSES

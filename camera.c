@@ -4,20 +4,12 @@
 // Camera Controller
 
 
-// DEPENDENCIES
-#include "linmath.h"
-#include "game.h"
+// HEADER / DEPENDENCIES
 #include "camera.h"
-#include "objects.h"
-#include "camera.h"
-
-#include <math.h>
-#include <stdio.h>
 
 
 // STATE GLOBALS
-private CameraClass Camera;
-
+static CameraClass Camera;
 
 
 // SOURCE

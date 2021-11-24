@@ -3,6 +3,8 @@
         "*.tcc": "c",
         "deque": "c",
         "string": "c",
-        "vector": "c"
+        "vector": "c",
+        "game.h": "c",
+        "camera.h": "c"
     }
 }
