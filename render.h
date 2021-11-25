@@ -9,6 +9,7 @@
 #include "game.h"
 #include "linmath.h"
 #include "objects.h"
+#include "camera.h"
 
 #include <string.h>
 

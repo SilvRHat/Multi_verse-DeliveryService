@@ -31,18 +31,17 @@ static void buildVerse(VerseInstance self, GLFWwindow* window) {
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
     asp = (height>0)? (double)width/height : 1;
-    mat4x4_perspective(HOME_VERSE.ProjectMatrix, 60, asp, 1/10, 20);
+    mat4x4_perspective(HOME_VERSE.ProjectMatrix, 60.0*TO_RAD, asp, 1/10.0, 20);
 
     PartInstance* inst = NULL;
     for (int i=0; i<3; i++) for (int j=-1; j<=1; j+=2) {
         vec3 v = {0,0,0};
-        v[i]=j;
+        v[i]=j*2;
         
         inst = cube(1);
         SetPosition(inst, v);
-        VerseAddChild(HOME_VERSE, inst);
-        HOME_VERSE.Children[0] = inst;
-        printf("[%p]\n",HOME_VERSE.Children[0]);
+        SetColor(inst, (color3) {255,200,255});
+        VerseAddChild(&HOME_VERSE, inst);
     }
 }
 

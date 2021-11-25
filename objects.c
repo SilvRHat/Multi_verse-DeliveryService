@@ -6,16 +6,80 @@
 
 
 // SOURCE
+
 PartInstance* empty() {
     PartInstance* inst = (PartInstance*) malloc(sizeof(PartInstance));
     NewInstance(inst);
     return inst;
 }
 
+
 PartInstance* cube(double size) {
+    static int init = 0;
+    static unsigned int vaoId = 0, vboId = 0;
+
+    // Setup Part
     PartInstance* inst = empty();
     inst->ClassName="Cube";
+    for (int i=0; i<3; i++)
+        inst->Size[i]=size;
+
     // Generate vertices
+    if (!init) {
+        init = 1;
+        // Generate cube
+        float cube_verts[VERTEX_DATA_ROW * 36];
+        {
+            float s = .5;
+            mat4x4 front_verts[6];
+            mat4x4_translate(front_verts[0], s, s, s); mat4x4_translate(front_verts[1],-s, s, s); mat4x4_translate(front_verts[2], s,-s, s);
+            mat4x4_translate(front_verts[3],-s, s, s); mat4x4_translate(front_verts[4], s,-s, s); mat4x4_translate(front_verts[5],-s,-s, s);
+            // Rotate around sides
+            for (int i=0; i<6; i++) {
+                mat4x4 rot, tri;
+                mat4x4_identity(rot);
+                if (i<4) // Front, Back, Left, Right
+                    mat4x4_rotate_X(rot, rot, 90*i*TO_RAD);
+                else // Top & Bottom
+                    mat4x4_rotate_Y(rot, rot, 90*TO_RAD * (i==5?-1:1));
+                for (int v=0; v<6; v++) {
+                    int off = ((i*6)+v) * VERTEX_DATA_ROW;
+                    mat4x4_mul(tri, rot, front_verts[v]);
+                    mat4x4_col(cube_verts+off, tri, 3);         // Vertex Position Data
+                    cube_verts[off+4] = tri[2][0];              // Normal Data
+                    cube_verts[off+5] = tri[2][1];
+                    cube_verts[off+6] = tri[2][2];
+                    /*printf("{%.0f\t%.0f\t%.0f\t%.0f\t%.0f\t%.0f\t%.0f}\n", 
+                        cube_verts[off+0],
+                        cube_verts[off+1],
+                        cube_verts[off+2],
+                        cube_verts[off+3],
+                        cube_verts[off+4],
+                        cube_verts[off+5],
+                        cube_verts[off+6]);*/
+                }
+            }
+        }
+        // Credit to Willem A. (Vlakkies) Schreuder for code structure binding VAO and VBO
+        // Sourced from ex27.c [lines 432]
+
+        glGenVertexArrays(1,&vaoId);
+        glBindVertexArray(vaoId);
+
+        //  Get buffer name
+        glGenBuffers(1,&vboId);
+        //  Bind VBO
+        glBindBuffer(GL_ARRAY_BUFFER,vboId);
+        //  Copy cube data to VBO
+        glBufferData(GL_ARRAY_BUFFER,sizeof(cube_verts),cube_verts,GL_STATIC_DRAW);
+
+        //  Release VAO and VBO
+        glBindVertexArray(0);
+        glBindBuffer(GL_ARRAY_BUFFER,0);
+    }
+    inst->vertices = 36;
+    inst->vao = vaoId;
+    inst->vbo = vboId;
 
     return inst;
 }
@@ -34,6 +98,7 @@ void NewInstance(PartInstance* p) {
     vec3_zero(p->Rotation);
     for (int i=0; i<3; i++) 
         p->Color[i]=255;
+    p->shaderId = DEFAULT_SHADER;
 }
 
 
@@ -122,29 +187,25 @@ void SetMetaProperties(PartInstance* p, char* name, char* className, int homeVer
 }
 
 
-int VerseAddChild(VerseInstance v, PartInstance* p) {
-    printf("Adding to [%s]\n", v.Name);
+
+int VerseAddChild(VerseInstance* v, PartInstance* p) {
     for (int i=0; i<MAX_VERSE_INSTANCES; i++) {
-        if (v.Children[i]!=NULL)
-            continue;
-        printf("Child is [%p][%d]\n", v.Children[i], i);
-        v.Children[i] = p;
-        printf("Child is now [%p][%d]\n", v.Children[i], i);
-        printf("I make cube at [%d]\n", i);
-        printf("Cube is [%p]\n", p);
-        return 0;
+        if (v->Children[i]==NULL) {
+            v->Children[i] = p;
+            return 0;
+        }
     }
 #ifdef DEVMODE
-    printf("Could not add child (%s) to verse (%s)\n", p->Name, v.Name);
+    printf("Could not add child (%s) to verse (%s)\n", p->Name, v->Name);
 #endif
     return -1;
 }
 
 
-PartInstance* VerseFindFirstChild(VerseInstance v, char* Name) {
+PartInstance* VerseFindFirstChild(VerseInstance* v, char* Name) {
     for (int i=0; i<MAX_VERSE_INSTANCES; i++) {
-        if ( (v.Children[i]!=NULL) && (strcmp(v.Children[i]->Name, Name)==0) )
-            return v.Children[i];
+        if ( (v->Children[i]!=NULL) && (strcmp(v->Children[i]->Name, Name)==0) )
+            return v->Children[i];
     }
     return NULL;
 }

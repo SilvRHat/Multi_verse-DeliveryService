@@ -30,7 +30,7 @@ typedef struct Camera_Instance_s CameraInstance;
 
 
 // CONFIG
-#define MAX_INCLINATION_ANG 360
+#define MAX_INCLINATION_ANG 80
 #define MIN_FOCUS 1
 #define MAX_FOCUS 25
 

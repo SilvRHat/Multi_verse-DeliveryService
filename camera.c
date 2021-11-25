@@ -25,19 +25,20 @@ void cameraInit(GLFWwindow* window) {
 
 
 void cameraStep(GLFWwindow* window, double t, double step) {
+    ErrCheck("cameraStep BEGIN");
     vec4 cam_pos;
     mat4x4 cam_rot, m;
 
     // Reset orientation / Save translation
     mat4x4_col(cam_pos, Camera.CFrame, 3);
     mat4x4_translate(Camera.CFrame, cam_pos[0], cam_pos[1], cam_pos[2]);
-    mat4x4_rotate_X(Camera.CFrame, Camera.CFrame, -90 * TO_RAD);
+    // mat4x4_rotate_X(Camera.CFrame, Camera.CFrame, -90 * TO_RAD);
     
     // Build Rotation
     mat4x4_identity(cam_rot);
     mat4x4_identity(m);
 
-    mat4x4_rotate_Z(cam_rot, cam_rot, Camera.az);
+    mat4x4_rotate_Y(cam_rot, cam_rot, Camera.az);
     mat4x4_rotate_X(m, m, Camera.ph);
     mat4x4_mul(cam_rot, m, cam_rot);
     mat4x4_orthonormalize(cam_rot, cam_rot);
@@ -47,7 +48,8 @@ void cameraStep(GLFWwindow* window, double t, double step) {
     mat4x4_dup(Camera.ViewCFrame, Camera.CFrame);
     mat4x4_translate(m,0,0,-Camera.Focus);
     mat4x4_mul(Camera.ViewCFrame, m, Camera.ViewCFrame);
-    glMultMatrixf((GLfloat*) Camera.ViewCFrame);
+    //glMultMatrixf((GLfloat*) Camera.ViewCFrame);
+    ErrCheck("cameraStep END");
 }
 
 

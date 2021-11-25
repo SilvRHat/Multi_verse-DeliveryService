@@ -18,6 +18,10 @@
 #include <stdlib.h>
 
 
+// CONST
+#define VERTEX_DATA_ROW 7
+
+
 // SIMPLE DATATYPES
 typedef GLubyte color3[3];
 
@@ -36,12 +40,14 @@ struct PartInstance_s {
     vec3 Position;
     vec3 Rotation;
     // Vertices
-
+    unsigned int vao;
+    unsigned int vbo;
+    unsigned int vertices;
     // UV Mapping Data
     // Texture
     // Color & Lighting
     color3 Color;
-    // Shader Properties
+    int shaderId;
     // Collision Properties
 };
 typedef struct PartInstance_s PartInstance;
@@ -120,8 +126,8 @@ typedef struct VerseInstance_s VerseInstance;
 
 
 // Verse Functions
-int VerseAddChild(VerseInstance v, PartInstance* p);
-PartInstance* VerseFindFirstChild(VerseInstance v, char* Name);
+int VerseAddChild(VerseInstance* v, PartInstance* p);
+PartInstance* VerseFindFirstChild(VerseInstance* v, char* Name);
 
 
 #endif
