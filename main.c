@@ -90,25 +90,22 @@ void ErrCheck(const char* where) {
         case GL_NO_ERROR:
             break;
         case GL_INVALID_ENUM:
-            desc = "An unacceptable value is specified for an enumerated argument. The offending command is ignored and has no other side effect than to set the error flag.";
+            desc = "An unacceptable value is specified for an enumerated argument.";
             break;
         case GL_INVALID_VALUE:
-            desc = "A numeric argument is out of range. The offending command is ignored and has no other side effect than to set the error flag.";
+            desc = "A numeric argument is out of range.";
             break;
         case GL_INVALID_OPERATION:
-            desc = "The specified operation is not allowed in the current state. The offending command is ignored and has no other side effect than to set the error flag.";
+            desc = "The specified operation is not allowed in the current state.";
             break;
         case GL_INVALID_FRAMEBUFFER_OPERATION:
-            desc = "The framebuffer object is not complete. The offending command is ignored and has no other side effect than to set the error flag.";
+            desc = "The framebuffer object is not complete.";
             break;
         case GL_OUT_OF_MEMORY:
-            desc = "There is not enough memory left to execute the command. The state of the GL is undefined, except for the state of the error flags, after this error is recorded.";
+            desc = "There is not enough memory left to execute the command.";
             break;
-        case GL_STACK_UNDERFLOW:
-            desc = "An attempt has been made to perform an operation that would cause an internal stack to underflow.";
-            break;
-        case GL_STACK_OVERFLOW:
-            desc = "An attempt has been made to perform an operation that would cause an internal stack to overflow.";
+        default:
+            desc = "Unknown Error";
             break;
    }
    if (err) fprintf(stderr,"ERROR: %s [%s]\n",desc,where);
