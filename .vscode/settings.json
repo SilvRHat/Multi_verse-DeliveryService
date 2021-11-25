@@ -9,6 +9,7 @@
         "render.h": "c",
         "unordered_map": "c",
         "system_error": "c",
-        "string.h": "c"
+        "string.h": "c",
+        "multiverse.h": "c"
     }
 }

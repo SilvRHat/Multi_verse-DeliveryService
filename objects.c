@@ -6,7 +6,6 @@
 
 
 // SOURCE
-
 PartInstance* empty() {
     PartInstance* inst = (PartInstance*) malloc(sizeof(PartInstance));
     NewInstance(inst);
@@ -208,4 +207,47 @@ PartInstance* VerseFindFirstChild(VerseInstance* v, char* Name) {
             return v->Children[i];
     }
     return NULL;
+}
+
+
+
+// Shaders
+// Credit to Willem A. (Vlakkies) Schreuder
+void printShaderLog(int shader, char* filename) {
+    int len=0;
+    glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &len);
+    if (len>1) {
+        int n=0;
+        char* buffer = (char*)malloc(len);
+        if (!buffer) Error("Cannot allocate %d bytes fir shader log\n", len);
+        glGetShaderInfoLog(shader, len, &n, buffer);
+        fprintf(stderr, "%s:\n%s\n", filename, buffer);
+    }   
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &len);
+    if (!len) Error("Error compiling %s\n",filename);
+}
+
+
+int BuildShader(GLenum type, char* filename) {
+    // Open source file and get size
+    FILE* fp = fopen(filename, "r");
+    if (!fp) Error("Cannot open file: %s\n", filename);
+    fseek(fp,0,SEEK_END);
+    int n = ftell(fp);
+    rewind(fp);
+
+    // Allocate and read source
+    char* source = malloc(n+1);
+    if (!source) Error("Could not allocate space for shader (%s) source\n", filename);
+    fread(source,n,sizeof(char),fp); source[n]='\x00';
+    fclose(fp); 
+
+    // Build Shader
+    int shader = glCreateShader(type);
+    glShaderSource(shader, 1, (const char**) &source, NULL);
+    glCompileShader(shader);
+    free(source);
+
+    printShaderLog(shader, filename);
+    return shader;
 }

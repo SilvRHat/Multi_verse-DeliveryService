@@ -48,59 +48,18 @@ static void CursorCallbackHandler(GLFWwindow* window, double xpos, double ypos) 
 }
 
 
-// GLFW / Window Callback
-void glfwErrorHandler(int code, const char* desc) {
-    printf("ERROR %d: %s\n", code, (desc!=NULL)? desc: "GLFW Encountered an issue");
-}
-
-
-void windowResize(GLFWwindow* window, int width, int height) {
-    double asp;
-    // TODO : Replace with by window projection matrix
-    glfwGetFramebufferSize(window, &width, &height);
-    asp = (height>0)? (double)width/height : 1;
-    
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    double dim=10;
-    //glOrtho(-asp*dim,asp*dim,-dim,+dim,-dim,+dim);
-    gluPerspective(60, asp, dim/8.0, 6*dim);
-    glMatrixMode(GL_MODELVIEW);
-}
-
-
-
 void gameLoop(GLFWwindow* window) {
-    ErrCheck("gameLoop BEGIN");
+    ErrCheck("ERRCHK IN: gameLoop()");
     static double t0 = 0;
     double t = glfwGetTime();
     double dt = t - t0;
     t0 = t;
 
     // Camera
-    //glLoadIdentity(); // TODO Remove
     cameraStep(window, t, dt);
 
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     // Render Scene
-    /*{
-        const double len=2.0;  //  Length of axes
-        glBegin(GL_LINES);
-        glVertex3d(0.0,0.0,0.0);
-        glVertex3d(len,0.0,0.0);
-        glVertex3d(0.0,0.0,0.0);
-        glVertex3d(0.0,len,0.0);
-        glVertex3d(0.0,0.0,0.0);
-        glVertex3d(0.0,0.0,len);
-        glEnd();
-        //  Label axes
-
-        //  Show quads
-        glPushMatrix();
-
-        glPopMatrix();
-    }*/
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     renderStep(window, t, dt);
     
     // Swap Buffers
@@ -108,107 +67,57 @@ void gameLoop(GLFWwindow* window) {
 
     // Input
     glfwPollEvents();
-    ErrCheck("gameLoop EXIT");
+    ErrCheck("ERRCHK RET: gameLoop()");
 }
 
 
-void Fatal(const char* format , ...)
-{
+// Error Functions
+// Credit to Willem A. (Vlakkies) Schreuder
+void Error(const char* format , ...) {
    va_list args;
    va_start(args,format);
+   printf("ERROR: ");
    vfprintf(stderr,format,args);
    va_end(args);
    exit(EXIT_FAILURE);
 }
-char* ReadText(char *file)
-{
-   char* buffer;
-   //  Open file
-   FILE* f = fopen(file,"rt");
-   if (!f) Fatal("Cannot open text file %s\n",file);
-   //  Seek to end to determine size, then rewind
-   fseek(f,0,SEEK_END);
-   int n = ftell(f);
-   rewind(f);
-   //  Allocate memory for the whole file
-   buffer = (char*)malloc(n+1);
-   if (!buffer) Fatal("Cannot allocate %d bytes for text file %s\n",n+1,file);
-   //  Snarf the file
-   if (fread(buffer,n,1,f)!=1) Fatal("Cannot read %d bytes for text file %s\n",n,file);
-   buffer[n] = 0;
-   //  Close and return
-   fclose(f);
-   return buffer;
-}
-void PrintShaderLog(int obj,char* file)
-{
-   int len=0;
-   glGetShaderiv(obj,GL_INFO_LOG_LENGTH,&len);
-   if (len>1)
-   {
-      int n=0;
-      char* buffer = (char *)malloc(len);
-      if (!buffer) Fatal("Cannot allocate %d bytes of text for shader log\n",len);
-      glGetShaderInfoLog(obj,len,&n,buffer);
-      fprintf(stderr,"%s:\n%s\n",file,buffer);
-      free(buffer);
-   }
-   glGetShaderiv(obj,GL_COMPILE_STATUS,&len);
-   if (!len) Fatal("Error linking program\n");
-}
-
-void PrintProgramLog(int obj)
-{
-   int len=0;
-   glGetProgramiv(obj,GL_INFO_LOG_LENGTH,&len);
-   if (len>1)
-   {
-      int n=0;
-      char* buffer = (char *)malloc(len);
-      if (!buffer) Fatal("Cannot allocate %d bytes of text for program log\n",len);
-      glGetProgramInfoLog(obj,len,&n,buffer);
-      fprintf(stderr,"%s\n",buffer);
-   }
-   glGetProgramiv(obj,GL_LINK_STATUS,&len);
-   if (!len) Fatal("Error linking program\n");
-}
-
-int CreateShader(GLenum type,char* file)
-{
-   //  Create the shader
-   int shader = glCreateShader(type);
-   //  Load source code from file
-   char* source = ReadText(file);
-   glShaderSource(shader,1,(const char**)&source,NULL);
-   free(source);
-   //  Compile the shader
-   fprintf(stderr,"Compile %s\n",file);
-   glCompileShader(shader);
-   //  Check for errors
-   PrintShaderLog(shader,file);
-   //  Return name
-   return shader;
-}
-
-void loadShader() {
-    int prog = glCreateProgram();
-    int vert = CreateShader(GL_VERTEX_SHADER, "default.vert");
-    int frag = CreateShader(GL_FRAGMENT_SHADER, "default.frag");
-
-    glAttachShader(prog,vert);
-    glAttachShader(prog,frag);
-    glLinkProgram(prog);
-    PrintProgramLog(prog);
 
 
-    DEFAULT_SHADER = prog;
-}
-
-void ErrCheck(const char* where)
-{
+void ErrCheck(const char* where) {
    int err = glGetError();
-   if (err) fprintf(stderr,"ERROR: %s [%s]\n",gluErrorString(err),where);
+   char* desc = "No Error";
+   switch (err) {
+        case GL_NO_ERROR:
+            break;
+        case GL_INVALID_ENUM:
+            desc = "An unacceptable value is specified for an enumerated argument. The offending command is ignored and has no other side effect than to set the error flag.";
+            break;
+        case GL_INVALID_VALUE:
+            desc = "A numeric argument is out of range. The offending command is ignored and has no other side effect than to set the error flag.";
+            break;
+        case GL_INVALID_OPERATION:
+            desc = "The specified operation is not allowed in the current state. The offending command is ignored and has no other side effect than to set the error flag.";
+            break;
+        case GL_INVALID_FRAMEBUFFER_OPERATION:
+            desc = "The framebuffer object is not complete. The offending command is ignored and has no other side effect than to set the error flag.";
+            break;
+        case GL_OUT_OF_MEMORY:
+            desc = "There is not enough memory left to execute the command. The state of the GL is undefined, except for the state of the error flags, after this error is recorded.";
+            break;
+        case GL_STACK_UNDERFLOW:
+            desc = "An attempt has been made to perform an operation that would cause an internal stack to underflow.";
+            break;
+        case GL_STACK_OVERFLOW:
+            desc = "An attempt has been made to perform an operation that would cause an internal stack to overflow.";
+            break;
+   }
+   if (err) fprintf(stderr,"ERROR: %s [%s]\n",desc,where);
 }
+
+void glfwErrorHandler(int code, const char* desc) {
+    printf("ERROR %d: %s\n", code, (desc!=NULL)? desc: "GLFW Encountered an issue");
+}
+
 
 
 // Main
@@ -240,11 +149,6 @@ int main() {
     }
     glfwMakeContextCurrent(window);
     glfwSwapInterval(1);
-    //windowResize(window, windowX, windowY);
-    
-    // Window refresh callbacks
-    glfwSetWindowSizeCallback(window, windowResize);
-    //glfwSetWindowRefreshCallback(window, gameLoop);
     
     // Input Callbacks
     glfwSetKeyCallback(window, KeyCallbackHandler);
@@ -253,7 +157,6 @@ int main() {
     glfwSetCursorPosCallback(window, CursorCallbackHandler);
 
     // Controller Systems
-    loadShader();
     cameraInit(window);
     renderInit(window);
 

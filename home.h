@@ -9,6 +9,7 @@
 #include "game.h"
 #include "objects.h"
 #include "linmath.h"
+#include "multiverse.h"
 
 #include <stdlib.h>
 

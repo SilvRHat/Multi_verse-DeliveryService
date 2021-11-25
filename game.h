@@ -34,6 +34,7 @@ extern SignalInstance
     KeyInput, MouseButtonInput, ScrollInput, CursorInput;
 
 #include <stdio.h>
+void Error(const char* format , ...);
 void ErrCheck(const char* where);
 
 

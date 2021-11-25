@@ -9,60 +9,8 @@
 
 
 // SOURCE
-// Temporary function
-void _cube(vec3 size, vec3 position, vec3 rotation) {
-    glPushMatrix();
-    // Place cube
-    glTranslated(position[0],position[1],position[2]);
-    glRotated(rotation[1], 0,1,0);
-    glRotated(rotation[0], 1,0,0);
-    glRotated(rotation[2], 0,0,1);
-    glScaled(size[0]/2.0, size[1]/2.0, size[2]/2.0);
-
-    glBegin(GL_QUADS);
-    //  Front
-    glColor3ub(255, 0, 0);
-    glVertex3f(-1,-1, 1);
-    glVertex3f(+1,-1, 1);
-    glVertex3f(+1,+1, 1);
-    glVertex3f(-1,+1, 1);
-    //  Back
-    glColor3ub(255, 255, 0);
-    glVertex3f(+1,-1,-1);
-    glVertex3f(-1,-1,-1);
-    glVertex3f(-1,+1,-1);
-    glVertex3f(+1,+1,-1);
-    //  Right
-    glColor3ub(0, 255, 0);
-    glVertex3f(+1,-1,+1);
-    glVertex3f(+1,-1,-1);
-    glVertex3f(+1,+1,-1);
-    glVertex3f(+1,+1,+1);
-    //  Left
-    glColor3ub(0, 255, 255);
-    glVertex3f(-1,-1,-1);
-    glVertex3f(-1,-1,+1);
-    glVertex3f(-1,+1,+1);
-    glVertex3f(-1,+1,-1);
-    //  Top
-    glColor3ub(0, 0, 255);
-    glVertex3f(-1,+1,+1);
-    glVertex3f(+1,+1,+1);
-    glVertex3f(+1,+1,-1);
-    glVertex3f(-1,+1,-1);
-    //  Bottom
-    glColor3ub(255, 0, 255);
-    glVertex3f(-1,-1,-1);
-    glVertex3f(+1,-1,-1);
-    glVertex3f(+1,-1,+1);
-    glVertex3f(-1,-1,+1);
-    //  End
-    glEnd();
-    glPopMatrix();
-}
-
 //  Axes vertex data
-const float axes_data[] =
+/*const float axes_data[] =
 {
    0,0,0,
    2,0,0,
@@ -72,9 +20,7 @@ const float axes_data[] =
    0,0,2,
 };
 static unsigned int axes_vao=0;
-/*
- * Draw axes
- */
+
 static void Axes()
 {
    //  Select shader
@@ -127,7 +73,7 @@ static void Axes()
    //  Release VAO and VBO
    glBindVertexArray(0);
    glBindBuffer(GL_ARRAY_BUFFER,0);
-}
+}*/
 
 static void Draw(PartInstance* part)
 {
@@ -140,26 +86,26 @@ static void Draw(PartInstance* part)
     mat4x4_mul(ViewMatrix, ViewMatrix, part->CFrame);
     mat4x4_scale_aniso(ViewMatrix, ViewMatrix, part->Size[0], part->Size[1], part->Size[2]);
 
-    glUseProgram(DEFAULT_SHADER);
+    glUseProgram(part->shaderId);
     glCullFace(GL_FRONT);
     //  Once initialized, just bind VAO
     glBindVertexArray(part->vao);
     glBindBuffer(GL_ARRAY_BUFFER,part->vbo);
    
-    int loc = glGetAttribLocation(DEFAULT_SHADER,"Vertex");
+    int loc = glGetAttribLocation(part->shaderId,"Vertex");
     glVertexAttribPointer(loc,4,GL_FLOAT,0,28,(void*) 0);
     glEnableVertexAttribArray(loc);
     
     //  Set Projection and View Matrix
-    int id = glGetUniformLocation(DEFAULT_SHADER,"ProjectionMatrix");
-    glUniformMatrix4fv(id,1,0,ProjectionMatrix);
-    id = glGetUniformLocation(DEFAULT_SHADER,"ModelViewMatrix");
-    glUniformMatrix4fv(id,1,0,ViewMatrix);
+    int id = glGetUniformLocation(part->shaderId,"ProjectionMatrix");
+    glUniformMatrix4fv(id,1,0,(const GLfloat *)ProjectionMatrix);
+    id = glGetUniformLocation(part->shaderId,"ModelViewMatrix");
+    glUniformMatrix4fv(id,1,0,(const GLfloat *)ViewMatrix);
 
     //  Set color
     const float c[] = {part->Color[0]/255.0, part->Color[1]/255.0, part->Color[2]/255.0, 1};
-    id = glGetUniformLocation(DEFAULT_SHADER,"Kd");
-    glUniform4fv(id, 1, c);
+    id = glGetUniformLocation(part->shaderId,"Kd");
+    glUniform4fv(id, 1, (const GLfloat *) c);
 
     //  Draw Cube
     glDrawArrays(GL_TRIANGLES,0,part->vertices);
@@ -185,6 +131,7 @@ void renderVerse(VerseInstance verse) {
 
 void renderInit(GLFWwindow* window) {
     // Initialize Verses
+    MULTIVERSE.Build(MULTIVERSE, window);
     HOME_VERSE.Build(HOME_VERSE, window);
 }
 
@@ -192,15 +139,16 @@ void renderInit(GLFWwindow* window) {
 void renderExit(GLFWwindow* window) {
     // Deconstruct Verses
     HOME_VERSE.Clean(HOME_VERSE, window);
+    MULTIVERSE.Clean(MULTIVERSE, window);
 }
 
 
 void renderStep(GLFWwindow* window, double t, double step) {
-    ErrCheck("renderStep BEGIN");
+    ErrCheck("ERRCHK IN: renderStep()");
     
     //mat4x4 mv;
     //mat4x4_identity(mv);
     renderVerse(HOME_VERSE);
-    Axes();
-    ErrCheck("renderStep END");
+    //Axes();
+    ErrCheck("ERRCHK RET: renderStep()");
 }

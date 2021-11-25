@@ -6,10 +6,10 @@
 
 # Source
 SRC_MAIN = main.c 
-SRC_SYS = signal.c camera.c render.c objects.c
+SRC_SYS = signal.c camera.c render.c objects.c multiverse.c
 SRC_VRS = home.c
 
-HDR = game.h signal.h camera.h render.h objects.h linmath.h home.h
+HDR = game.h signal.h camera.h render.h objects.h linmath.h home.h multiverse.h
 EXE = Mv-DS
 
 all: $(EXE)

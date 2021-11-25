@@ -25,7 +25,7 @@ void cameraInit(GLFWwindow* window) {
 
 
 void cameraStep(GLFWwindow* window, double t, double step) {
-    ErrCheck("cameraStep BEGIN");
+    ErrCheck("ERRCHK IN: cameraStep()");
     vec4 cam_pos;
     mat4x4 cam_rot, m;
 
@@ -49,7 +49,7 @@ void cameraStep(GLFWwindow* window, double t, double step) {
     mat4x4_translate(m,0,0,-Camera.Focus);
     mat4x4_mul(Camera.ViewCFrame, m, Camera.ViewCFrame);
     //glMultMatrixf((GLfloat*) Camera.ViewCFrame);
-    ErrCheck("cameraStep END");
+    ErrCheck("ERRCHK RET: cameraStep()");
 }
 
 

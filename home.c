@@ -10,7 +10,7 @@ static void buildVerse();
 static void cleanVerse();
 
 VerseInstance HOME_VERSE = {
-    .VerseID = 0,
+    .VerseID = 1,
     .Name = "Home",
     ._Loaded = 0,
 
@@ -41,6 +41,7 @@ static void buildVerse(VerseInstance self, GLFWwindow* window) {
         inst = cube(1);
         SetPosition(inst, v);
         SetColor(inst, (color3) {255,200,255});
+        inst->shaderId = EMISSION_SHDR;
         VerseAddChild(&HOME_VERSE, inst);
     }
 }
