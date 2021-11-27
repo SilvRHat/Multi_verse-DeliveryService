@@ -21,5 +21,6 @@
 void renderInit(GLFWwindow* window);
 void renderExit(GLFWwindow* window);
 void renderStep(GLFWwindow* window, double t, double step);
+void DrawInstance(PartInstance* part);
 
 #endif

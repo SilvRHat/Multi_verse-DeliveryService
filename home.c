@@ -19,7 +19,7 @@ VerseInstance HOME_VERSE = {
     .RenderStepped = NewSignal,
 
     .Children = {NULL},
-    .Jumps = {NULL}
+    .Jumps = {NULL},
 };
 
 
@@ -37,11 +37,19 @@ static void buildVerse(VerseInstance self, GLFWwindow* window) {
     for (int i=0; i<3; i++) for (int j=-1; j<=1; j+=2) {
         vec3 v = {0,0,0};
         v[i]=j*2;
+        v[1]*=2;
         
-        inst = cube(1);
+        inst = cylinder(8, .2, 5);
         SetPosition(inst, v);
         SetColor(inst, (color3) {255,200,255});
-        inst->shaderId = EMISSION_SHDR;
+        SetShader(inst, EMISSION_SHDR);
+        VerseAddChild(&HOME_VERSE, inst);
+    }
+    // Axes
+    for (int i=0; i<3; i++) {
+        vec3 v; vec3_zero(v); v[i]=2;
+        inst = line(2, (vec4[]){{0,0,0,1},{v[0],v[1],v[2],1}});
+        SetShader(inst, EMISSION_SHDR);
         VerseAddChild(&HOME_VERSE, inst);
     }
 }
@@ -52,10 +60,9 @@ static void buildVerse(VerseInstance self, GLFWwindow* window) {
 static void cleanVerse(VerseInstance self, GLFWwindow* window) {
     SignalDestroy(&self.RenderStepped);
     
-    for (int i=0; i<MAX_VERSE_INSTANCES; i++) {
+    for (int i=0; i<MAX_INSTANCES; i++) {
         if (HOME_VERSE.Children[i]==NULL)
             break;
-        free(HOME_VERSE.Children[i]);
-        HOME_VERSE.Children[i] = NULL;
+        HOME_VERSE.Children[i] = DestroyPartInstance(HOME_VERSE.Children[i]);
     }
 }

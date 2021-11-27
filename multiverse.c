@@ -5,7 +5,7 @@
 #include "multiverse.h"
 
 // SHADERS
-int EMISSION_SHDR = 0;
+unsigned int EMISSION_SHDR = 0;
 
 // VERSE
 static void buildVerse();
@@ -30,13 +30,11 @@ VerseInstance MULTIVERSE = {
     // @brief Builds HOME_VERSE world
 static void buildVerse(VerseInstance self, GLFWwindow* window) {
     // EMISSION SHADER
-    int prog = glCreateProgram();
-    glAttachShader(prog, BuildShader(GL_VERTEX_SHADER, "shdr/emission.vert"));
-    glAttachShader(prog, BuildShader(GL_FRAGMENT_SHADER, "shdr/emission.frag"));
-    glLinkProgram(prog);
-    EMISSION_SHDR = prog;
-
-    
+    EMISSION_SHDR = glCreateProgram();
+    glAttachShader(EMISSION_SHDR, BuildShader(GL_VERTEX_SHADER, "shdr/emission.vert"));
+    glAttachShader(EMISSION_SHDR, BuildShader(GL_FRAGMENT_SHADER, "shdr/emission.frag"));
+    glBindAttribLocation(EMISSION_SHDR, 1, "Vertex");
+    glLinkProgram(EMISSION_SHDR);
 }
 
 
@@ -45,10 +43,9 @@ static void buildVerse(VerseInstance self, GLFWwindow* window) {
 static void cleanVerse(VerseInstance self, GLFWwindow* window) {
     SignalDestroy(&self.RenderStepped);
     
-    for (int i=0; i<MAX_VERSE_INSTANCES; i++) {
+    for (int i=0; i<MAX_INSTANCES; i++) {
         if (MULTIVERSE.Children[i]==NULL)
             break;
-        free(MULTIVERSE.Children[i]);
-        MULTIVERSE.Children[i] = NULL;
+        MULTIVERSE.Children[i] = DestroyPartInstance(MULTIVERSE.Children[i]);
     }
 }

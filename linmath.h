@@ -31,9 +31,15 @@
 typedef float vec##n[n]; \
 static inline void vec##n##_zero(vec##n r) \
 { \
-	int i; \
+	int i;\
 	for(i=0; i<n; ++i) \
-		r[i] = 0.f; \
+		r[i] = 0; \
+} \
+static inline void vec##n##_set(vec##n r, vec##n v) \
+{ \
+	int i;\
+	for(i=0; i<n; ++i) \
+		r[i] = v[i]; \
 } \
 static inline void vec##n##_add(vec##n r, vec##n const a, vec##n const b) \
 { \
@@ -74,6 +80,20 @@ static inline void vec##n##_norm(vec##n r, vec##n const v) \
 LINMATH_H_DEFINE_VEC(2)
 LINMATH_H_DEFINE_VEC(3)
 LINMATH_H_DEFINE_VEC(4)
+
+#define VEC2_ZERO (vec2){0,0}
+#define VEC3_ZERO (vec3){0,0,0}
+#define VEC4_ZERO (vec4){0,0,0,0}
+#define UNIT2_X (vec2){1,0}
+#define UNIT2_Y (vec2){0,1}
+#define UNIT3_X (vec3){1,0,0}
+#define UNIT3_Y (vec3){0,1,0}
+#define UNIT3_Z (vec3){0,0,1}
+#define UNIT4_X (vec4){1,0,0,0}
+#define UNIT4_Y (vec4){0,1,0,0}
+#define UNIT4_Z (vec4){0,0,1,0}
+#define UNIT4_W (vec4){0,0,0,1}
+
 
 static inline void vec3_mul_cross(vec3 r, vec3 const a, vec3 const b)
 {

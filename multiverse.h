@@ -17,8 +17,9 @@
 extern VerseInstance MULTIVERSE;
 
 // SHADERS
-extern int EMISSION_SHDR;
+unsigned int EMISSION_SHDR;
 
+// LORE
 
 
 #endif

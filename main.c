@@ -108,7 +108,7 @@ void ErrCheck(const char* where) {
             desc = "Unknown Error";
             break;
    }
-   if (err) fprintf(stderr,"ERROR: %s [%s]\n",desc,where);
+   if (err) fprintf(stderr,"ERROR: %s \nFrom: (%s)\n",desc,where);
 }
 
 void glfwErrorHandler(int code, const char* desc) {
@@ -154,7 +154,7 @@ int main() {
     glfwSetCursorPosCallback(window, CursorCallbackHandler);
 
     // Controller Systems
-    cameraInit(window);
+    cameraInit(window); 
     renderInit(window);
 
     // OpenGL
