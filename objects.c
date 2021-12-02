@@ -8,9 +8,6 @@
 // SOURCE
 
 // Drawing Functions
-static void drawFromTris(PartInstance* p) {
-    glDrawArrays(GL_TRIANGLES, 0, p->vertices);
-}
 static void drawFromTriFan(PartInstance* p) {
     glDrawArrays(GL_TRIANGLE_FAN, 0, p->vertices);
 }
@@ -90,6 +87,7 @@ void* DestroyPartInstance(PartInstance* p) {
 }
 
 #define ATTRIB_POS_VERTEX 1
+#define ATTRIB_POS_NORMAL 2
 void buildVAOVBO(unsigned int* vao, unsigned int *vbo, float verts[], int n) {
     glGenVertexArrays(1, vao);
     glBindVertexArray(*vao);
@@ -98,8 +96,10 @@ void buildVAOVBO(unsigned int* vao, unsigned int *vbo, float verts[], int n) {
     glBindBuffer(GL_ARRAY_BUFFER, *vbo);
     glBufferData(GL_ARRAY_BUFFER, n, verts, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(ATTRIB_POS_VERTEX, 3, GL_FLOAT, GL_FALSE, VERTEX_DATA_ROW*sizeof(GL_FLOAT), (void*) 0);
+    glVertexAttribPointer(ATTRIB_POS_VERTEX, 4, GL_FLOAT, GL_FALSE, VERTEX_DATA_ROW*sizeof(GL_FLOAT), (void*) 0);
     glEnableVertexAttribArray(ATTRIB_POS_VERTEX);
+    glVertexAttribPointer(ATTRIB_POS_NORMAL, 3, GL_FLOAT, GL_FALSE, VERTEX_DATA_ROW*sizeof(GL_FLOAT), (void*) 4);
+    glEnableVertexAttribArray(ATTRIB_POS_NORMAL);
 }
 
 
@@ -511,28 +511,27 @@ PartInstance* clonePart(PartInstance* src) {
 
 
 // Part Instance Methods
-void SetColor(PartInstance* p, color4 c) {
+void SetColor(PartInstance* p, color3 c) {
     for (int i=0; i<4; i++) 
         p->Color[i]=c[i];
+    p->Color[3]=255;
 }
 
 
 void SetCFrame(PartInstance* p, mat4x4 cf) {
     vec4 pos, rot;
-    float rx, ry, rz;
+    //float rx, ry, rz;
 
     // TODO
     // Find YXZ Euler Angles from Rotation Matrix
     // Credit: http://eecs.qmul.ac.uk/~gslabaugh/publications/euler.pdf
-    if (1 - fabsf(cf[0][2]) < 1e-3) {
+    /*if (1 - fabsf(cf[0][2]) < 1e-3) {
 
     }
     else { 
         // Gimbal lock edge case
 
-    }
-
-
+    */
 
     mat4x4_dup(p->CFrame, cf);
     mat4x4_col(pos, cf, 3);
@@ -601,6 +600,30 @@ void SetShader(PartInstance* p, unsigned int s) {
 }
 
 
+JumpInstance* NewJump() {
+    JumpInstance* j = (JumpInstance*) malloc(sizeof(JumpInstance));
+    mat4x4_identity(j->CFrame0);
+    mat4x4_identity(j->CFrame1);
+    j->ClassName="Jump";
+    j->Verse0=NULL;
+    j->Verse1=NULL;
+    j->Radius=5;
+}
+
+void *DestroyJump(VerseInstance* j) {
+    free(j);
+    return NULL;
+}
+
+void JumpConnectVerses(VerseInstance* v0, VerseInstance* v1) {
+
+}
+
+void JumpSetCFrames(mat4x4 CF0, mat4x4 CF1) {
+
+}
+
+
 
 int VerseAddChild(VerseInstance* v, PartInstance* p) {
     for (int i=0; i<MAX_INSTANCES; i++) {
@@ -654,7 +677,8 @@ int BuildShader(GLenum type, char* filename) {
     // Allocate and read source
     char* source = malloc(n+1);
     if (!source) Error("Could not allocate space for shader (%s) source\n", filename);
-    fread(source,n,sizeof(char),fp); source[n]='\x00';
+    if (fread(source,sizeof(char),n,fp)!=n) Error("Could not read shader (%s) source\n", filename);
+    source[n]='\x00';
     fclose(fp); 
 
     // Build Shader

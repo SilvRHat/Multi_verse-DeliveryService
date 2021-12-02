@@ -11,8 +11,7 @@ unsigned int EMISSION_SHDR = 0;
 static void buildVerse();
 static void cleanVerse();
 
-VerseInstance MULTIVERSE = {
-    .VerseID = 0,
+VerseInstance MULTI_VERSE = {
     .Name = "Multi_verse",
     ._Loaded = 0,
 
@@ -28,7 +27,7 @@ VerseInstance MULTIVERSE = {
 // SOURCE
 // buildVerse
     // @brief Builds HOME_VERSE world
-static void buildVerse(VerseInstance self, GLFWwindow* window) {
+static void buildVerse(VerseInstance* self, GLFWwindow* window) {
     // EMISSION SHADER
     EMISSION_SHDR = glCreateProgram();
     glAttachShader(EMISSION_SHDR, BuildShader(GL_VERTEX_SHADER, "shdr/emission.vert"));
@@ -40,12 +39,12 @@ static void buildVerse(VerseInstance self, GLFWwindow* window) {
 
 // cleanVerse
     // @brief Cleans up HOME_VERSE
-static void cleanVerse(VerseInstance self, GLFWwindow* window) {
-    SignalDestroy(&self.RenderStepped);
+static void cleanVerse(VerseInstance* self, GLFWwindow* window) {
+    SignalDestroy(&self->RenderStepped);
     
     for (int i=0; i<MAX_INSTANCES; i++) {
-        if (MULTIVERSE.Children[i]==NULL)
+        if (self->Children[i]==NULL)
             break;
-        MULTIVERSE.Children[i] = DestroyPartInstance(MULTIVERSE.Children[i]);
+        self->Children[i] = DestroyPartInstance(self->Children[i]);
     }
 }

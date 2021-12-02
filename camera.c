@@ -3,6 +3,8 @@
 
 // Camera Controller Source
 #include "camera.h"
+#include "objects.h"
+#include "home.h"
 
 
 // STATE GLOBALS
@@ -26,30 +28,21 @@ void cameraInit(GLFWwindow* window) {
 
 void cameraStep(GLFWwindow* window, double t, double step) {
     ErrCheck("ERRCHK IN: cameraStep()");
-    vec4 cam_pos;
-    mat4x4 cam_rot, m;
 
-    // Reset orientation / Save translation
-    mat4x4_col(cam_pos, Camera.CFrame, 3);
-    mat4x4_translate(Camera.CFrame, cam_pos[0], cam_pos[1], cam_pos[2]);
-    // mat4x4_rotate_X(Camera.CFrame, Camera.CFrame, -90 * TO_RAD);
-    
+    mat4x4 M;
+
     // Build Rotation
-    mat4x4_identity(cam_rot);
-    mat4x4_identity(m);
+    mat4x4_identity(M);
+    mat4x4_rotate_Y(M, M, Camera.az);
+    mat4x4_rotate_X(M, M, Camera.ph);
 
-    mat4x4_rotate_Y(cam_rot, cam_rot, Camera.az);
-    mat4x4_rotate_X(m, m, Camera.ph);
-    mat4x4_mul(cam_rot, m, cam_rot);
-    mat4x4_orthonormalize(cam_rot, cam_rot);
-    mat4x4_mul(Camera.CFrame, Camera.CFrame, cam_rot);
+    // Translate
+    vec4_set(M[3], Camera.CFrame[3]);
+    mat4x4_dup(Camera.CFrame, M);
 
-    // Build View Frame (Zoom out)
-    mat4x4_dup(Camera.ViewCFrame, Camera.CFrame);
-    mat4x4_translate(m,0,0,-Camera.Focus);
-    mat4x4_mul(Camera.ViewCFrame, m, Camera.ViewCFrame);
-    //glMultMatrixf((GLfloat*) Camera.ViewCFrame);
-    ErrCheck("ERRCHK RET: cameraStep()");
+    // Zoom out
+    mat4x4_dup(Camera.ViewCFrame, M);
+    mat4x4_translate_in_place(Camera.ViewCFrame, 0,0,Camera.Focus);
 }
 
 
@@ -71,13 +64,13 @@ void cameraCursorInput(GLFWwindow* window, double xpos, double ypos) {
         if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT)) {
             // Translate
             mat4x4 m;
-            mat4x4_translate(m, dx * Camera.Focus / 500.0, -dy * Camera.Focus / 500.0, 0);
-            mat4x4_mul(Camera.CFrame, m, Camera.CFrame);
+            mat4x4_translate(m, -dx * Camera.Focus / 500.0, dy * Camera.Focus / 500.0, 0);
+            mat4x4_mul(Camera.CFrame, Camera.CFrame, m);
         
         } else {
             // Rotate
-            Camera.az += dx * TO_RAD / 2.0;
-            Camera.ph += dy * TO_RAD / 2.0;
+            Camera.az -= dx * TO_RAD / 2.0;
+            Camera.ph -= dy * TO_RAD / 2.0;
             Camera.ph = clamp(Camera.ph, -MAX_INCLINATION_ANG*TO_RAD, MAX_INCLINATION_ANG*TO_RAD);
             Camera.az = fmod(Camera.az, 360.0*TO_RAD); Camera.ph = fmod(Camera.ph, 360.0*TO_RAD);
     }}

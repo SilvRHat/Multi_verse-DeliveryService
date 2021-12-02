@@ -65,14 +65,26 @@ struct PartInstance_s {
     // Texture
     // Color & Lighting
     color4 Color;
-    unsigned int shader;
+    double Transpareny;
+    unsigned int Shader;
     // Collision Properties
 };
 typedef struct PartInstance_s PartInstance;
 
 
-struct JumpInstance_s {};
+
+struct JumpInstance_s {
+    // Book Keeping
+    char *Name;
+    char *ClassName;
+
+    // Jumping
+    VerseInstance *Verse0, *Verse1;
+    mat4x4 CFrame0, CFrame1;
+    double Radius;
+};
 typedef struct JumpInstance_s JumpInstance;
+
 
 
 struct VerseInstance_s {
@@ -89,16 +101,18 @@ struct VerseInstance_s {
         // @brief Function to construct/ init the verse instance
         // @param self Verse Instance called from
         // @param window GLFW window context
-    void (*Build) (struct VerseInstance_s, GLFWwindow*);
+    void (*Build) (struct VerseInstance_s*, GLFWwindow*);
         // @brief Function to deconstruct/ cleanup the verse instance
         // @param self Verse Instance called from
         // @param window GLFW window context
-    void (*Clean) (struct VerseInstance_s, GLFWwindow*);
+    void (*Clean) (struct VerseInstance_s*, GLFWwindow*);
 
     // Events
     SignalInstance RenderStepped;
 };
 typedef struct VerseInstance_s VerseInstance;
+
+
 
 
 
@@ -114,37 +128,53 @@ PartInstance* plane(double size);
 PartInstance* circle(int sides, double radius);
 PartInstance* cube(double size);
 PartInstance* uvSphere(int segments, int rings, double radius);
-//PartInstance* icoSphere(int subdivisions, double radius);     // TODO: If useful
 PartInstance* cylinder(int sides, double radius, double depth);
 PartInstance* cone(int sides, double rad1, double rad0, double depth);
-//PartInstance* wedge(double size);
-//PartInstance* wedgecorner(double size);
+//PartInstance* wedge(double size); // TODO
+//PartInstance* wedgecorner(double size); // TODO
 
 // Loadable Objects
-//PartInstance* meshFromObj(int* name, char* objpath);
+// PartInstance* meshFromObj(int* name, char* objpath); // TODO
 PartInstance* clonePart(PartInstance* p);
 
 // Custom Objects
     // NONE
 
+
 // Part Methods
-void SetColor(PartInstance* p, color3 c);
-void SetCFrame(PartInstance* p, mat4x4 cf);
-void SetHomeVerse(PartInstance* p, int hv);
-void SetSize(PartInstance* p, vec3 s);
-void SetPosition(PartInstance* p, vec3 pos);
-void SetRotation(PartInstance* p, vec3 r);
-void SetTranslation(PartInstance* p, vec3 size, vec3 position, vec3 rotation);
-void SetMetaProperties(PartInstance* p, char* Name, char* ClassName, int HomeVerse);
-void SetShader(PartInstance* p, unsigned int shader);
+void PartSetColor(PartInstance* p, color3 c);
+void PartSetCFrame(PartInstance* p, mat4x4 cf);
+void PartSetSize(PartInstance* p, vec3 s);
+void PartSetPosition(PartInstance* p, vec3 pos);
+void PartSetRotation(PartInstance* p, vec3 r);
+void PartSetTranslation(PartInstance* p, vec3 size, vec3 position, vec3 rotation);
+void PartSetMetaProperties(PartInstance* p, char* Name, char* ClassName, int HomeVerse);
+void PartSetShader(PartInstance* p, unsigned int shader);
+
+
+
+
+// Jump Functions
+// Constructors / Destructors
+JumpInstance* NewJump();
+void *DestroyJump(JumpInstance* j);
+void JumpConnectVerses(VerseInstance* v0, VerseInstance* v1);
+void JumpSetCFrames(mat4x4 CF0, mat4x4 CF1);
+
+
 
 
 // Verse Functions
 int VerseAddChild(VerseInstance* v, PartInstance* p);
+int VerseAddJump(VerseInstance* v, JumpInstance* j);
 PartInstance* VerseFindFirstChild(VerseInstance* v, char* Name);
+PartInstance* VerseFindFirstJump(VerseInstance* v, char* Name);
 
 
-// Shaders
+
+
+// Shader Functions
 int BuildShader(GLenum type, char* filename);
+
 
 #endif

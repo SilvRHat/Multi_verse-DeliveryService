@@ -6,10 +6,10 @@
 
 # Source
 SRC_MAIN = main.c 
-SRC_SYS = signal.c camera.c render.c objects.c multiverse.c
+SRC_SYS = signal.c camera.c render.c objects.c multiverse.c gate.c
 SRC_VRS = home.c
 
-HDR = game.h signal.h camera.h render.h objects.h linmath.h home.h multiverse.h
+HDR = game.h signal.h camera.h render.h objects.h linmath.h home.h multiverse.h gate.h
 EXE = Mv-DS
 
 all: $(EXE)
@@ -27,14 +27,13 @@ CLEAN=rm -f *.exe *.o *.a
 else
 #  OSX
 ifeq "$(shell uname)" "Darwin"
-RES=$(shell uname -r|sed -E 's/(.).*/\1/'|tr 12 21)
-CFLG=-O3 -Wall -Wno-deprecated-declarations -DGLFW -DGLFW_USE_RETINA=0 -DRES=$(RES)
+CFLG=-O3 -Wall -Wno-deprecated-declarations -DGLFW -DGLFW_USE_RETINA=0
 LIBS=-lglfw -framework OpenGL -framework IOKit
 
 #  Linux/Unix/Solaris
 else
 CFLG=-O3 -Wall -DGLFW
-LIBS=-lglfw -lGLU -lGL -lm
+LIBS=-lglfw -lGL -lm
 endif
 #  OSX/Linux/Unix/Solaris
 CLEAN=rm -f $(EXE) *.o *.a

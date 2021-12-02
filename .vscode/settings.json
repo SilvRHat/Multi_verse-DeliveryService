@@ -11,6 +11,7 @@
         "system_error": "c",
         "string.h": "c",
         "multiverse.h": "c",
-        "maid.h": "c"
+        "maid.h": "c",
+        "gate.h": "c"
     }
 }
