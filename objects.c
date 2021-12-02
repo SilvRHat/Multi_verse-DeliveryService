@@ -6,34 +6,33 @@
 
 
 // SOURCE
-
 // Drawing Functions
 static void drawFromTriFan(PartInstance* p) {
-    glDrawArrays(GL_TRIANGLE_FAN, 0, p->vertices);
+    glDrawArrays(GL_TRIANGLE_FAN, 0, p->Vertices);
 }
 static void drawFromTriStrip(PartInstance* p) {
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, p->vertices);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, p->Vertices);
 }
 static void drawCubeFromTriStrip(PartInstance* p) {
     for (int i=0; i<6; i++)
         glDrawArrays(GL_TRIANGLE_STRIP, i*4, 4);
 }
 static void drawUVSphereFromTriStrip(PartInstance* p) {
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, p->vertices);
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, p->Vertices);
 }
 static void drawCylinder(PartInstance* p) {
-    int sides = (p->triangles/4);
+    int sides = (p->Triangles/4);
     glDrawArrays(GL_TRIANGLE_FAN, 0, sides+2);
     glDrawArrays(GL_TRIANGLE_FAN, sides+2, sides+2);
     glDrawArrays(GL_TRIANGLE_STRIP, 2*(sides+2), 2*(sides+1));
 }
 static void drawCone(PartInstance* p) {
-    int sides = p->triangles / 3;
+    int sides = p->Triangles / 3;
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 2*(sides+1));
     glDrawArrays(GL_TRIANGLE_FAN, 2*(sides+1), sides+2);
 }
 static void drawFrustumCone(PartInstance* p) {
-    int sides = p->triangles / 4;
+    int sides = p->Triangles / 4;
     glDrawArrays(GL_TRIANGLE_STRIP, 0, 2*(sides+1));
     glDrawArrays(GL_TRIANGLE_FAN, 2*(sides+1), sides+2);
     glDrawArrays(GL_TRIANGLE_FAN, 2*(sides+1) + sides+2, sides+2);
@@ -42,53 +41,16 @@ static void drawFromLineStrip(PartInstance* p) {
     GLint range[2];
     glGetIntegerv(GL_SMOOTH_LINE_WIDTH_RANGE, range);
     glEnable(GL_LINE_SMOOTH);
-    glDrawArrays(GL_LINE_STRIP, 0, p->vertices);
+    glDrawArrays(GL_LINE_STRIP, 0, p->Vertices);
 }
 
-
-
-// Generic Constructor
-PartInstance* NewPartInstance() {
-    PartInstance* p = (PartInstance*) malloc(sizeof(PartInstance));
-    
-    p->Name="";
-    p->ClassName="";
-    mat4x4_identity(p->CFrame);
-    p->HomeVerse=0;
-    vec3_zero(p->Size);
-    vec3_zero(p->Position);
-    vec3_zero(p->Rotation);
-    for (int i=0; i<3; i++) 
-        p->Color[i]=255;
-
-    SetShader(p, 0);
-    p->vao = 0;
-    p->vbo = 0;
-
-    return p;
-}
-
-// Buffer Deconstructor
-void* DeletePartInstanceBuffers(PartInstance* p) {
-    if (glIsBuffer(p->vbo))
-        glDeleteBuffers(1, &p->vbo);
-    if (glIsVertexArray(p->vao))
-        glDeleteVertexArrays(1, &p->vao);
-    p->vbo = 0;
-    p->vao = 0;
-
-    return NULL;
-}
-
-// Generic Deconstructor 
-void* DestroyPartInstance(PartInstance* p) {
-    free(p);
-    return NULL;
-}
-
-#define ATTRIB_POS_VERTEX 1
-#define ATTRIB_POS_NORMAL 2
-void buildVAOVBO(unsigned int* vao, unsigned int *vbo, float verts[], int n) {
+// buildVAOVBO
+    // @brief Helper function for setting up a VAO/VBO pair (unique per vertice set)
+    // @param vao Address of VAO variable to set
+    // @param vbo Address of VBO variable to set
+    // @param verts Array of geometery data
+    // @param size of geometery data array
+static void buildVAOVBO(unsigned int* vao, unsigned int *vbo, float verts[], int n) {
     glGenVertexArrays(1, vao);
     glBindVertexArray(*vao);
 
@@ -103,7 +65,65 @@ void buildVAOVBO(unsigned int* vao, unsigned int *vbo, float verts[], int n) {
 }
 
 
+
+// Part Functions
+// Generic Constructor
+    // @brief Creates a PartInstance object using malloc. 
+    // All instance properties are set to their defaults.
+    // @return Returns the created PartInstance
+PartInstance* NewPartInstance() {
+    PartInstance* p = (PartInstance*) malloc(sizeof(PartInstance));
+    
+    p->Name="";
+    p->ClassName="";
+    mat4x4_identity(p->CFrame);
+    vec3_zero(p->Size);
+    vec3_zero(p->Position);
+    vec3_zero(p->Rotation);
+
+    p->Vao = 0;
+    p->Vbo = 0;
+    p->Triangles =0;
+    p->Vertices = 0;
+
+    for (int i=0; i<3; i++) 
+        p->Color[i]=255;
+    p->Transparency=1;
+    p->Shader = 0;
+
+    return p;
+}
+
+
+// Buffer Deconstructor
+    // @brief Will delete the VAO/VBO buffer/array assosiated with an object
+    // @return Returns NULL
+void* DeletePartInstanceBuffers(PartInstance* p) {
+    if (glIsBuffer(p->Vbo))
+        glDeleteBuffers(1, &p->Vbo);
+    if (glIsVertexArray(p->Vao))
+        glDeleteVertexArrays(1, &p->Vao);
+    p->Vbo = 0;
+    p->Vao = 0;
+
+    return NULL;
+}
+
+// Generic Deconstructor 
+    // @brief Will free Part Instance from memory. This should only be called once per part instance.
+    // @return Returns NULL
+void* DestroyPartInstance(PartInstance* p) {
+    free(p);
+    return NULL;
+}
+
+
 // Instance Constructors
+// Line
+    // @brief Contructs a part instance for rendering a line from 3D vector data
+    // @param n Number of points in line
+    // @pts Array of vec4 3d positions
+    // @return Part Instance for drawing line
 PartInstance* line(int n, vec4 pts[]) {
     // Build vertice data
     unsigned int vao, vbo;
@@ -119,15 +139,19 @@ PartInstance* line(int n, vec4 pts[]) {
 
     // Create Instance
     PartInstance* p = NewPartInstance();
-    p->_drawFunc = drawFromLineStrip;
-    p->vertices = n;
-    p->vao = vao;
-    p->vbo = vbo;
+    p->Draw = drawFromLineStrip;
+    p->Vertices = n;
+    p->Vao = vao;
+    p->Vbo = vbo;
     vec3_set(p->Size, (vec3){1,1,1});
+    p->ClassName = "Line";
     return p;
 }
 
-
+// Plane
+    // @brief Contructs a part instance for rendering a plane
+    // @param size x/z sizing of plane
+    // @return Part Instance for drawing plane
 PartInstance* plane(double size) {
     static unsigned int vao = 0, vbo = 0;
     static int init = 0;
@@ -146,32 +170,36 @@ PartInstance* plane(double size) {
 
     // Create Instance
     PartInstance* p = NewPartInstance();
-    p->_drawFunc = drawFromTriStrip;
-    p->vertices = 4;
-    p->triangles = 2;
-    p->vao = vao;
-    p->vbo = vbo;
+    p->Draw = drawFromTriStrip;
+    p->Vertices = 4;
+    p->Triangles = 2;
+    p->Vao = vao;
+    p->Vbo = vbo;
     vec3_set(p->Size, (vec3){size,0,size});
     p->ClassName = "Plane";
     return p;
 }
 
-
+// Circle
+    // @brief Contructs a part instance for rendering a circle
+    // @param sides Number of sides to render on circle; inputs are standardized to reduce unique vaos/vbos
+    // @param radius Radius of circle
+    // @return Part Instance for drawing circle
 PartInstance* circle(int sides, double radius) {
     static unsigned int vao[5] = {0}, vbo[5] = {0};
     unsigned int cvao = 0, cvbo = 0, *evao, *evbo;
     if (sides<=2)
         return NULL;
     
-    // Set effective vao/ vbo integer to use
-    int mem = -1;
+    // Set effective vao/ vbo int address to use
+    int mem;
     switch(sides) {
-        case INST_XLO_SEGMTS:   mem=0; break;
+        case INST_XLO_SEGMTS:   mem=0; break;   // Standard Params
         case INST_LOW_SEGMTS:   mem=1; break;
         case INST_MED_SEGMTS:   mem=2; break;
         case INST_HI_SEGMTS:    mem=3; break;
         case INST_XHI_SEGMTS:   mem=4; break;
-        default:                mem=-1; break;
+        default:                mem=-1; break;  // Custom Params
     }
     if (mem==-1) {
         evao = &cvao; evbo = &cvbo;
@@ -180,7 +208,7 @@ PartInstance* circle(int sides, double radius) {
         evao = &vao[mem]; evbo = &vbo[mem];
     }
     
-    // If not initialized or custom params, build vertice
+    // If not initialized or custom params, build vertice data from new
     if ((*evao==0) || (*evbo==0)) {
         float s = .5;
         float verts[VERTEX_DATA_ROW * (sides+2)];
@@ -194,8 +222,8 @@ PartInstance* circle(int sides, double radius) {
                 vec4 pos = {s*cosf(a*TO_RAD), 0.f, s*sinf(a*TO_RAD), 1.f};
                 
                 off = i * VERTEX_DATA_ROW;
-                vec4_set((float*) (verts+off), pos);        // Position
-                vec3_set((float*) (verts+off+4), UNIT3_Y);  // Normal
+                vec4_set((float*) (verts+off), pos);        // Set Position
+                vec3_set((float*) (verts+off+4), UNIT3_Y);  // Set Normal
             }
         }
         buildVAOVBO(evao, evbo, verts, sizeof(verts));
@@ -203,17 +231,20 @@ PartInstance* circle(int sides, double radius) {
 
     // Create Instance
     PartInstance* p = NewPartInstance();
-    p->_drawFunc = drawFromTriFan;
-    p->vertices = sides+2;
-    p->triangles = sides;
-    p->vao = *evao;
-    p->vbo = *evbo;
+    p->Draw = drawFromTriFan;
+    p->Vertices = sides+2;
+    p->Triangles = sides;
+    p->Vao = *evao;
+    p->Vbo = *evbo;
     vec3_set(p->Size, (vec3){radius*2, 0, radius*2});
     p->ClassName = "Circle";
     return p;
 }
 
-
+// Cube
+    // @brief Contructs a part instance for rendering a cube
+    // @param size x/y/z sizing of cube
+    // @return Part Instance for drawing cube
 PartInstance* cube(double size) {
     static unsigned int vao = 0, vbo = 0;
     static int init = 0;
@@ -239,8 +270,8 @@ PartInstance* cube(double size) {
                 for (int v=0; v<4; v++) {
                     int off = ((i*4)+v) * VERTEX_DATA_ROW;
                     mat4x4_mul(tri, rot, front_verts[v]); // Rotate front face
-                    mat4x4_col(verts+off, tri, 3);  // Vertex Position Data
-                    vec3_set(verts+off+4, tri[2]);  // Normal Data
+                    mat4x4_col(verts+off, tri, 3);  // Set Position
+                    vec3_set(verts+off+4, tri[2]);  // Set Normal
                 }
             }
         }
@@ -249,11 +280,11 @@ PartInstance* cube(double size) {
 
     // Create Instance
     PartInstance* p = NewPartInstance();
-    p->_drawFunc = drawCubeFromTriStrip;
-    p->vertices = 24;
-    p->triangles = 12;
-    p->vao = vao;
-    p->vbo = vbo;
+    p->Draw = drawCubeFromTriStrip;
+    p->Vertices = 24;
+    p->Triangles = 12;
+    p->Vao = vao;
+    p->Vbo = vbo;
     vec3_set(p->Size, (vec3){size, size, size});
     p->ClassName = "Cube";
     return p;
@@ -261,14 +292,22 @@ PartInstance* cube(double size) {
 
 
 
-
+// SphereVertFromAngles
+    // @brief Sets a vec4 to a position on a sphere of radius 1 given 2 angles
+    // @param th Angle 1 (Horizontal XZ)
+    // @param ph Angle 2 (Vertical Y)
 static void SphereVertFromAngles(vec4 v, double th, double ph) {
     v[0] = cos(ph * TO_RAD) * sin(th * TO_RAD);
     v[1] = sin(ph * TO_RAD);
     v[2] = cos(ph * TO_RAD) * cos(th * TO_RAD);
     v[3] = 1.f;
 }
-
+// uvSphere
+    // @brief Contructs a part instance for rendering a sphere built with quads (UV)
+    // @param segments The amount of detail around the sphere (XZ). These inputs are standardized to reduce unqiue vbos/vaos
+    // @param rings The amount of detail along the sphere (Y). These inputs are standardized to reduce unique vaos/vbos
+    // @return Part Instance for drawing sphere. If not given enough segment/ring input, NULL is returned
+    // since the requested shape is not qualified for drawing a sphere geometrically in 3D space.
 PartInstance* uvSphere(int segments, int rings, double radius) {
     static unsigned int vao[5][5] = {{0,0,0,0,0}}, vbo[5][5] = {{0,0,0,0,0}};
     unsigned int cvao = 0, cvbo = 0, *evao, *evbo;
@@ -329,17 +368,20 @@ PartInstance* uvSphere(int segments, int rings, double radius) {
 
     // Create Instance
     PartInstance* p = NewPartInstance();
-    p->_drawFunc = drawUVSphereFromTriStrip;
-    p->vertices = (rings+1) * (segments+1) * 2;
-    p->triangles = segments * (rings+1) * 2;
-    p->vao = *evao;
-    p->vbo = *evbo;
+    p->Draw = drawUVSphereFromTriStrip;
+    p->Vertices = (rings+1) * (segments+1) * 2;
+    p->Triangles = (rings+1) * segments * 2;
+    p->Vao = *evao;
+    p->Vbo = *evbo;
     vec3_set(p->Size, (vec3){radius*2, radius*2, radius*2});
     p->ClassName = "UVSphere";
     return p;
 }
 
-
+// Cylinder
+    // @brief Contructs a part instance for rendering a cylinder
+    // @param sides Number of sides to render on cylinder; inputs are standardized to reduce unique vaos/vbos
+    // @return Part Instance for drawing cylinder
 PartInstance* cylinder(int sides, double radius, double depth) {
     static unsigned int vao[5] = {0}, vbo[5] = {0};
     unsigned int cvao = 0, cvbo = 0, *evao, *evbo;
@@ -406,17 +448,23 @@ PartInstance* cylinder(int sides, double radius, double depth) {
 
     // Create Instance
     PartInstance* p = NewPartInstance();
-    p->_drawFunc = drawCylinder;
-    p->vertices = 2*(2*sides+3);
-    p->triangles = 4*sides;
-    p->vao = *evao;
-    p->vbo = *evbo;
+    p->Draw = drawCylinder;
+    p->Vertices = 2*(2*sides+3);
+    p->Triangles = 4*sides;
+    p->Vao = *evao;
+    p->Vbo = *evbo;
     vec3_set(p->Size, (vec3){radius*2, depth, radius*2});
     p->ClassName = "Cylinder";
     return p;
 }
 
-
+// Cone
+    // @brief Contructs a part instance for rendering a cone
+    // @param sides Number of sides to render on cylinder; inputs are standardized to reduce unique vaos/vbos
+    // @param rad0 Radius of bottom of cone
+    // @param rad1 Radius of top of cone; If not 0, a new VAO/VBO will be created as the radius ratio is not standardized
+    // @param depth Size of cone depth
+    // @return Part Instance for drawing cone
 PartInstance* cone(int sides, double rad0, double rad1, double depth) {
     static unsigned int vao[5], vbo[5];
     unsigned int cvao = 0, cvbo = 0, *evao, *evbo;
@@ -489,19 +537,22 @@ PartInstance* cone(int sides, double rad0, double rad1, double depth) {
     
     // Create Instance
     PartInstance* p = NewPartInstance();
-    p->_drawFunc = (frustum)? drawFrustumCone: drawCone;
-    p->vertices = (frustum?2:1)*(sides+2) + (2*(sides+1));
-    p->triangles = (frustum?4:3)*sides;
-    p->vao = *evao;
-    p->vbo = *evbo;
+    p->Draw = (frustum)? drawFrustumCone: drawCone;
+    p->Vertices = (frustum?2:1)*(sides+2) + (2*(sides+1));
+    p->Triangles = (frustum?4:3)*sides;
+    p->Vao = *evao;
+    p->Vbo = *evbo;
     vec3_set(p->Size, (vec3){rad0*2, depth, rad0*2});
-    p->ClassName = "Cone";
+    p->ClassName = (frustum)? "FrustumCone":"Cone";
     return p;
 }
 
 
+// clonePart
+    // @brief Duplicates a part instance resuing all set properties including vao/vbo properties
+    // @param src Part Instance to clone
+    // @return Cloned Part Instance
 PartInstance* clonePart(PartInstance* src) {
-    // Create Instance
     PartInstance* p = NewPartInstance();
     memcpy(p, src, sizeof(PartInstance));
     return p;
@@ -511,14 +562,12 @@ PartInstance* clonePart(PartInstance* src) {
 
 
 // Part Instance Methods
-void SetColor(PartInstance* p, color3 c) {
-    for (int i=0; i<4; i++) 
+void PartSetColor(PartInstance* p, color3 c) {
+    for (int i=0; i<3; i++) 
         p->Color[i]=c[i];
-    p->Color[3]=255;
 }
 
-
-void SetCFrame(PartInstance* p, mat4x4 cf) {
+void PartSetCFrame(PartInstance* p, mat4x4 cf) {
     vec4 pos, rot;
     //float rx, ry, rz;
 
@@ -541,19 +590,12 @@ void SetCFrame(PartInstance* p, mat4x4 cf) {
     }
 }
 
-
-void SetHomeVerse(PartInstance* p, int hv) {
-    p->HomeVerse = hv;
-}
-
-
-void SetSize(PartInstance* p, vec3 s) {
+void PartSetSize(PartInstance* p, vec3 s) {
     for (int i=0; i<3; i++) 
         p->Size[i]=s[i];
 }
 
-
-void SetPosition(PartInstance* p, vec3 pos) {
+void PartSetPosition(PartInstance* p, vec3 pos) {
     mat4x4 temp;
     for (int i=0; i<3; i++) 
         p->Position[i]=pos[i];
@@ -564,8 +606,7 @@ void SetPosition(PartInstance* p, vec3 pos) {
     mat4x4_dup(p->CFrame, temp);
 }
 
-
-void SetRotation(PartInstance* p, vec3 r) {
+void PartSetRotation(PartInstance* p, vec3 r) {
     mat4x4 temp;
     for (int i=0; i<3; i++) 
         p->Rotation[i]=r[i];
@@ -580,27 +621,19 @@ void SetRotation(PartInstance* p, vec3 r) {
     mat4x4_dup(p->CFrame, temp);
 }
 
-
-void SetTranslation(PartInstance* p, vec3 size, vec3 position, vec3 rotation) {
-    SetSize(p, size);
-    SetPosition(p, position);
-    SetRotation(p, rotation);
+void PartSetShader(PartInstance* p, GLuint s) {
+    p->Shader=s;
 }
 
 
-void SetMetaProperties(PartInstance* p, char* name, char* className, int homeVerse) {
-    p->Name=name;
-    p->ClassName=className;
-    p->HomeVerse=homeVerse;
-}
 
 
-void SetShader(PartInstance* p, unsigned int s) {
-    p->shader =s;
-}
-
-
-JumpInstance* NewJump() {
+// Jump Functions
+// NewJumpInstance
+    // @brief Creates a new Jump Instance, used for rendering an external verse object,
+    // the camera is not currently hosted in; Uses malloc to allocate object memory
+    // @return Allocated JumpInstance address.
+JumpInstance* NewJumpInstance() {
     JumpInstance* j = (JumpInstance*) malloc(sizeof(JumpInstance));
     mat4x4_identity(j->CFrame0);
     mat4x4_identity(j->CFrame1);
@@ -608,50 +641,163 @@ JumpInstance* NewJump() {
     j->Verse0=NULL;
     j->Verse1=NULL;
     j->Radius=5;
+    return j;
 }
 
-void *DestroyJump(VerseInstance* j) {
+// DestroyJumpInstance
+    // @brief Deallocates memory for a JumpInstance object
+    // @param j The jump instance to free up
+void *DestroyJumpInstance(JumpInstance* j) {
     free(j);
     return NULL;
 }
 
-void JumpConnectVerses(VerseInstance* v0, VerseInstance* v1) {
-
+// JumpConnectVerses
+    // @brief Will bind to verses together with a JumpInstance; 
+    // ordering of verses should follow same ordering of JumpSetCFrames
+    // @param j Jump Instance to bind verses on
+    // @pram v0 First verse to connect
+    // @param v1 Second verse to connect
+void JumpConnectVerses(JumpInstance* j, VerseInstance* v0, VerseInstance* v1) {
+    if (j->Verse0) VerseRemoveJump(v0, j);
+    if (j->Verse1) VerseRemoveJump(v1, j);
+    VerseAddJump(v0, j);
+    VerseAddJump(v1, j);
+    j->Verse0=v0;
+    j->Verse1=v1;
 }
 
-void JumpSetCFrames(mat4x4 CF0, mat4x4 CF1) {
-
+// JumpConnectVerses
+    // @brief Will bind to verses together with a JumpInstance; 
+    // ordering of verses should follow same ordering of JumpConnectVerses
+    // @param j Jump Instance to bind verses on
+    // @pram CF0 CFrame location in j.Verse0 to render v.Verse1 at; Portal drawn around Z axis
+    // @param CF1 CFrame location in j.Verse1 to render v.Verse0 at; Portal drawn around Z axis
+void JumpSetCFrames(JumpInstance* j, mat4x4 CF0, mat4x4 CF1) {
+    mat4x4_dup(j->CFrame0, CF0);
+    mat4x4_dup(j->CFrame1, CF1);
 }
 
 
 
-int VerseAddChild(VerseInstance* v, PartInstance* p) {
-    for (int i=0; i<MAX_INSTANCES; i++) {
+
+// VerseAddPart
+    // @brief Adds a part as a 'child' under a VerseInstance
+    // @param v Verse Instance to add part to
+    // @param p Part Instance to be added
+    // @return 0 on success; -1 if part could not be added
+int VerseAddPart(VerseInstance* v, PartInstance* p) {
+    for (int i=0; i<MAX_PART_INSTANCES; i++) {
         if (v->Children[i]==NULL) {
             v->Children[i] = p;
             return 0;
         }
+        else if (v->Children[i]==p) {
+            return 0;
+        }
     }
 #ifdef DEVMODE
-    printf("Could not add child (%s) to verse (%s)\n", p->Name, v->Name);
+    printf("Could not add part (%s) to verse (%s)\n", p->Name, v->Name);
 #endif
     return -1;
 }
 
+// VerseAddJump
+    // @brief Adds a jump under a VerseInstance
+    // @param v Verse Instance to add part to
+    // @param j Jump Instance to be added
+    // @return 0 on success; -1 if part could not be added
+int VerseAddJump(VerseInstance* v, JumpInstance* j) {
+    for (int i=0; i<MAX_JUMP_INSTANCES; i++) {
+        if (v->Jumps[i]==NULL) {
+            v->Jumps[i] = j;
+            return 0;
+        }
+        else if (v->Jumps[i]==j) {
+            return 0;
+        }
+    }
+#ifdef DEVMODE
+    printf("Could not add jump (%s) to verse (%s)\n", j->Name, v->Name);
+#endif
+    return -1;
+}
 
-PartInstance* VerseFindFirstChild(VerseInstance* v, char* Name) {
-    for (int i=0; i<MAX_INSTANCES; i++) {
+// VerseRemovePart
+    // @brief Removes a part under a VerseInstance; Does not free part from memory
+    // @param v Verse Instance to remove part from
+    // @param p Part Instance to be removed
+    // @return 0 on success; -1 if part could not be removed/found
+int VerseRemovePart(VerseInstance* v, PartInstance* p) {
+    for (int i=0; i<MAX_PART_INSTANCES; i++) {
+        if (v->Children[i]==p) {
+            v->Children[i] = NULL;
+            for (int j=i; j<MAX_PART_INSTANCES-1; j++) {
+                v->Children[j]=v->Children[j+1];
+            }
+            v->Children[MAX_PART_INSTANCES-1]=NULL;
+            return 0;
+        }
+    }
+    return -1;
+}
+
+// VerseRemoveJump
+    // @brief Removes a jump under a VerseInstance; Does not free jump from memory
+    // @param v Verse Instance to remove jump from
+    // @param p Jump Instance to be removed
+    // @return 0 on success; -1 if jump could not be removed/found
+int VerseRemoveJump(VerseInstance* v, JumpInstance* j) {
+    for (int i=0; i<MAX_JUMP_INSTANCES; i++) {
+        if (v->Jumps[i]==j) {
+            v->Jumps[i] = NULL;
+            for (int j=i; j<MAX_JUMP_INSTANCES-1; j++) {
+                v->Jumps[j]=v->Jumps[j+1];
+            }
+            v->Jumps[MAX_JUMP_INSTANCES-1]=NULL;
+            return 0;
+        }
+    }
+    return -1;
+}
+
+
+// VerseFindFirstPart
+    // @brief Will return the first PartInstance parented under a VerseInstance with a given Name
+    // @param v Verse Instance to search
+    // @param Name Name to search for
+    // @return If a Part Instance is found with the corresponding name, it is returned;
+    // Otherwise NULL is returned
+PartInstance* VerseFindFirstPart(VerseInstance* v, char* Name) {
+    for (int i=0; i<MAX_PART_INSTANCES; i++) {
         if ( (v->Children[i]!=NULL) && (strcmp(v->Children[i]->Name, Name)==0) )
             return v->Children[i];
     }
     return NULL;
 }
 
+// VerseFindFirstJump
+    // @brief Will return the first JumpInstance parented under a VerseInstance with a given Name
+    // @param v Jump Instance to search
+    // @param Name Name to search for
+    // @return If a Jump Instance is found with the corresponding name, it is returned;
+    // Otherwise NULL is returned
+JumpInstance* VerseFindFirstJump(VerseInstance* v, char* Name) {
+    for (int i=0; i<MAX_JUMP_INSTANCES; i++) {
+        if ( (v->Jumps[i]!=NULL) && (strcmp(v->Jumps[i]->Name, Name)==0) )
+            return v->Jumps[i];
+    }
+    return NULL;
+}
+
+
+
 
 
 // Shaders
 // Credit to Willem A. (Vlakkies) Schreuder
-void printShaderLog(int shader, char* filename) {
+    // @brief Will print log of information about built shader; used for debugging
+static void printShaderLog(GLuint shader, char* filename) {
     int len=0;
     glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &len);
     if (len>1) {
@@ -665,14 +811,21 @@ void printShaderLog(int shader, char* filename) {
     if (!len) Error("Error compiling %s\n",filename);
 }
 
-
-int BuildShader(GLenum type, char* filename) {
+// BuildShader
+    // @brief Will compiler a shader from a given file's source text;
+    // prints any errors in compiling individual shaders
+    // @param type The type of shader to create
+    // @param filename The name of the file to read
+    // @throws Will throw a fatal error if shader file cannot be read correctly
+    // @return Returns 
+GLuint BuildShaderFromFile(GLenum type, char* filename) {
     // Open source file and get size
     FILE* fp = fopen(filename, "r");
     if (!fp) Error("Cannot open file: %s\n", filename);
     fseek(fp,0,SEEK_END);
     int n = ftell(fp);
     rewind(fp);
+
 
     // Allocate and read source
     char* source = malloc(n+1);
@@ -681,11 +834,13 @@ int BuildShader(GLenum type, char* filename) {
     source[n]='\x00';
     fclose(fp); 
 
+
     // Build Shader
-    int shader = glCreateShader(type);
+    GLuint shader = glCreateShader(type);
     glShaderSource(shader, 1, (const char**) &source, NULL);
     glCompileShader(shader);
     free(source);
+
 
     printShaderLog(shader, filename);
     return shader;

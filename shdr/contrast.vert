@@ -2,11 +2,11 @@
 #version 400 core
 
 //  Transformation matrices
-uniform mat4 ModelViewMatrix;
-uniform mat4 ProjectionMatrix;
+layout (location=3) uniform mat4 ModelViewMatrix;
+layout (location=4) uniform mat4 ProjectionMatrix;
 
 //  Vertex attributes (input)
-in vec4 Vertex;
+layout (location=1) in vec4 Vertex;
 
 void main()
 {

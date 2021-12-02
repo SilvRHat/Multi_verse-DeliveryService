@@ -2,11 +2,11 @@
 #version 400 core
 
 //  Input Color
-uniform vec4  Kd;
+uniform vec4  Color;
 //  Fragment color
-layout (location=0) out vec4 FragColor;
+layout(location = 0) out vec4 FragColor;
 
 void main()
 {
-   FragColor = Kd;
+   FragColor = Color;
 }

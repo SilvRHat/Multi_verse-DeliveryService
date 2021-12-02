@@ -6,7 +6,8 @@ uniform mat4 ModelViewMatrix;
 uniform mat4 ProjectionMatrix;
 
 //  Vertex attributes (input)
-in vec4 Vertex;
+layout (location=5) in vec4 Vertex;
+layout (location=6) in vec3 Normal;
 
 void main()
 {

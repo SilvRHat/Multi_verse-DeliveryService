@@ -11,18 +11,16 @@
 #include "linmath.h"
 #include "signal.h"
 
-
-#ifdef DEVMODE
 #include <stdio.h>
-#endif
 #include <string.h>
 #include <stdlib.h>
 
 
+
 // CONST
 #define VERTEX_DATA_ROW 7
-#define MAX_INSTANCES 512
-#define MAX_JUMP_INSTANCES 32
+#define MAX_PART_INSTANCES 512  // TODO: Make dyanmic
+#define MAX_JUMP_INSTANCES 64
 
 
 // Use same VBO for a defined set of vertices
@@ -39,11 +37,17 @@
 #define INST_LOW_RINGS  8
 #define INST_XLO_RINGS  4
 
+#define DRAWMODE_FILLED 0
+#define DRAWMODE_LINE   1
+
+// Shader Layout
+#define ATTRIB_POS_VERTEX           5
+#define ATTRIB_POS_NORMAL           6
+
 
 
 // SIMPLE DATATYPES
 typedef GLubyte color3[3];
-typedef GLubyte color4[4];
 
 
 // GAME INSTANCES
@@ -51,22 +55,21 @@ struct PartInstance_s {
     // Book Keeping
     char* Name;
     char* ClassName;
-    // Positional / Translational
+    // Positional/ Scaling
     mat4x4 CFrame;
-    int HomeVerse;
     vec3 Size;
     vec3 Position;
     vec3 Rotation;
     // Vertices Data
-    unsigned int vao, vbo;
-    unsigned int triangles, vertices, rings;
-    void (*_drawFunc)();
+    GLuint Vao, Vbo;
+    unsigned int Triangles, Vertices;
+    void (*Draw)();    // Replace for part instancing
     // UV Mapping Data
     // Texture
     // Color & Lighting
-    color4 Color;
-    double Transpareny;
-    unsigned int Shader;
+    color3 Color;
+    float Transparency;
+    GLuint Shader;
     // Collision Properties
 };
 typedef struct PartInstance_s PartInstance;
@@ -79,9 +82,9 @@ struct JumpInstance_s {
     char *ClassName;
 
     // Jumping
-    VerseInstance *Verse0, *Verse1;
+    void *Verse0, *Verse1;
     mat4x4 CFrame0, CFrame1;
-    double Radius;
+    float Radius;
 };
 typedef struct JumpInstance_s JumpInstance;
 
@@ -89,12 +92,10 @@ typedef struct JumpInstance_s JumpInstance;
 
 struct VerseInstance_s {
     // Properties
-    int VerseID;
-    int _Loaded;
     char* Name;
     mat4x4 ProjectMatrix;
 
-    PartInstance* Children[MAX_INSTANCES];
+    PartInstance* Children[MAX_PART_INSTANCES];
     JumpInstance* Jumps[MAX_JUMP_INSTANCES];
 
     // Methods
@@ -147,34 +148,34 @@ void PartSetCFrame(PartInstance* p, mat4x4 cf);
 void PartSetSize(PartInstance* p, vec3 s);
 void PartSetPosition(PartInstance* p, vec3 pos);
 void PartSetRotation(PartInstance* p, vec3 r);
-void PartSetTranslation(PartInstance* p, vec3 size, vec3 position, vec3 rotation);
-void PartSetMetaProperties(PartInstance* p, char* Name, char* ClassName, int HomeVerse);
-void PartSetShader(PartInstance* p, unsigned int shader);
+void PartSetShader(PartInstance* p, GLuint shader);
 
 
 
 
 // Jump Functions
 // Constructors / Destructors
-JumpInstance* NewJump();
-void *DestroyJump(JumpInstance* j);
-void JumpConnectVerses(VerseInstance* v0, VerseInstance* v1);
-void JumpSetCFrames(mat4x4 CF0, mat4x4 CF1);
+JumpInstance* NewJumpInstance();
+void *DestroyJumpInstance(JumpInstance* j);
+void JumpConnectVerses(JumpInstance* j, VerseInstance* v0, VerseInstance* v1);
+void JumpSetCFrames(JumpInstance* j, mat4x4 CF0, mat4x4 CF1);
 
 
 
 
 // Verse Functions
-int VerseAddChild(VerseInstance* v, PartInstance* p);
+int VerseAddPart(VerseInstance* v, PartInstance* p);
 int VerseAddJump(VerseInstance* v, JumpInstance* j);
-PartInstance* VerseFindFirstChild(VerseInstance* v, char* Name);
-PartInstance* VerseFindFirstJump(VerseInstance* v, char* Name);
+int VerseRemovePart(VerseInstance* v, PartInstance* p);
+int VerseRemoveJump(VerseInstance* v, JumpInstance* j);
+PartInstance* VerseFindFirstPart(VerseInstance* v, char* Name);
+JumpInstance* VerseFindFirstJump(VerseInstance* v, char* Name);
 
 
 
 
 // Shader Functions
-int BuildShader(GLenum type, char* filename);
+GLuint BuildShaderFromFile(GLenum type, char* filename);
 
 
 #endif

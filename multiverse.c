@@ -13,7 +13,6 @@ static void cleanVerse();
 
 VerseInstance MULTI_VERSE = {
     .Name = "Multi_verse",
-    ._Loaded = 0,
 
     .Build = buildVerse,
     .Clean = cleanVerse,
@@ -30,8 +29,8 @@ VerseInstance MULTI_VERSE = {
 static void buildVerse(VerseInstance* self, GLFWwindow* window) {
     // EMISSION SHADER
     EMISSION_SHDR = glCreateProgram();
-    glAttachShader(EMISSION_SHDR, BuildShader(GL_VERTEX_SHADER, "shdr/emission.vert"));
-    glAttachShader(EMISSION_SHDR, BuildShader(GL_FRAGMENT_SHADER, "shdr/emission.frag"));
+    glAttachShader(EMISSION_SHDR, BuildShaderFromFile(GL_VERTEX_SHADER, "shdr/emission.vert"));
+    glAttachShader(EMISSION_SHDR, BuildShaderFromFile(GL_FRAGMENT_SHADER, "shdr/emission.frag"));
     glBindAttribLocation(EMISSION_SHDR, 1, "Vertex");
     glLinkProgram(EMISSION_SHDR);
 }
@@ -42,7 +41,7 @@ static void buildVerse(VerseInstance* self, GLFWwindow* window) {
 static void cleanVerse(VerseInstance* self, GLFWwindow* window) {
     SignalDestroy(&self->RenderStepped);
     
-    for (int i=0; i<MAX_INSTANCES; i++) {
+    for (int i=0; i<MAX_PART_INSTANCES; i++) {
         if (self->Children[i]==NULL)
             break;
         self->Children[i] = DestroyPartInstance(self->Children[i]);

@@ -10,7 +10,6 @@
 #include "linmath.h"
 #include "game.h"
 #include "camera.h"
-#include "objects.h"
 
 #include <math.h>
 #include <stdio.h>
