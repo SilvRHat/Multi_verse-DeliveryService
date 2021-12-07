@@ -13,5 +13,8 @@
         "multiverse.h": "c",
         "maid.h": "c",
         "gate.h": "c"
-    }
+    },
+    "C_Cpp.workspaceParsingPriority": "high",
+    "C_Cpp.intelliSenseMemoryLimit": 8192,
+    "C_Cpp.default.intelliSenseMode": "macos-gcc-x86"
 }

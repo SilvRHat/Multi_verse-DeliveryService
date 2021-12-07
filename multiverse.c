@@ -28,11 +28,19 @@ VerseInstance MULTI_VERSE = {
     // @brief Builds HOME_VERSE world
 static void buildVerse(VerseInstance* self, GLFWwindow* window) {
     // EMISSION SHADER
+    GLuint emission_frag, emission_vert;
+    // Build
+    emission_vert = BuildShaderFromFile(GL_VERTEX_SHADER, "shdr/emission.vert"),
+    emission_frag = BuildShaderFromFile(GL_FRAGMENT_SHADER, "shdr/emission.frag");
     EMISSION_SHDR = glCreateProgram();
-    glAttachShader(EMISSION_SHDR, BuildShaderFromFile(GL_VERTEX_SHADER, "shdr/emission.vert"));
-    glAttachShader(EMISSION_SHDR, BuildShaderFromFile(GL_FRAGMENT_SHADER, "shdr/emission.frag"));
-    glBindAttribLocation(EMISSION_SHDR, 1, "Vertex");
+    glAttachShader(EMISSION_SHDR, emission_frag);
+    glAttachShader(EMISSION_SHDR, emission_vert);
     glLinkProgram(EMISSION_SHDR);
+    // Cleanup
+    glDetachShader(EMISSION_SHDR, emission_frag);
+    glDetachShader(EMISSION_SHDR, emission_vert);
+    glDeleteShader(emission_frag);
+    glDeleteShader(emission_vert);
 }
 
 

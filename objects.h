@@ -84,6 +84,7 @@ struct JumpInstance_s {
     // Jumping
     void *Verse0, *Verse1;
     mat4x4 CFrame0, CFrame1;
+    mat4x4 _ToV0, _ToV1; 
     float Radius;
 };
 typedef struct JumpInstance_s JumpInstance;

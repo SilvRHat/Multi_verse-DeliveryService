@@ -3,7 +3,7 @@
 
 // Verse#0 - Home Source
 #include "home.h"
-
+#include "camera.h"
 
 // VERSE
 static void buildVerse();
@@ -20,16 +20,42 @@ VerseInstance HOME_VERSE = {
     .Jumps = {NULL},
 };
 
+void DrawVerseAt(VerseInstance* self, mat4x4 M, color3 c) {
+    PartInstance* nwp = NULL;
+    mat4x4 rot;
+    vec4 look, pos, poslook, temp;
+    mat4x4_from_rot(rot, M);
+    mat4x4_col(look, M, 2);
+    mat4x4_col(pos, M, 3);
+
+    mat4x4_rotate_X(rot, rot, 90*TO_RAD);
+    
+    void* lineDrawFunc;
+    vec3_scale(temp, look, 2);
+    vec3_add(poslook, temp, pos);
+    VerseAddPart(self, nwp = line(2, (vec4[]){
+            {pos[0],pos[1],pos[2],1}, 
+            {poslook[0],poslook[1],poslook[2],1}
+        })); {
+        PartSetShader(nwp, EMISSION_SHDR);
+    }
+    lineDrawFunc = nwp->Draw;
+
+    VerseAddPart(self, nwp = circle(INST_MED_RINGS, 5)); {
+        PartSetCFrame(nwp, rot);
+        PartSetPosition(nwp, pos);
+        PartSetShader(nwp, EMISSION_SHDR);
+        PartSetColor(nwp, c);
+        nwp->Draw = lineDrawFunc;
+    }
+}
+
 
 // SOURCE
 // buildVerse
     // @brief Builds HOME_VERSE world
 static void buildVerse(VerseInstance* self, GLFWwindow* window) {
-    double asp;
-    int width, height;
-    glfwGetFramebufferSize(window, &width, &height);
-    asp = (height>0)? (double)width/height : 1;
-    mat4x4_perspective(self->ProjectMatrix, 60.0*TO_RAD, asp, 1/10.0, 20);
+    mat4x4_perspective(self->ProjectMatrix, 60.0*TO_RAD, 1080.0/720.0, 1/10.0, 2000);
 
     // Material Building
     PartInstance* nwp = NULL; // New Working Part
@@ -42,7 +68,7 @@ static void buildVerse(VerseInstance* self, GLFWwindow* window) {
     // Skybox
     PartSetColor(sky, (color3){100,214,240});
     PartSetShader(sky, EMISSION_SHDR);
-    for (int i=0; i<3; i++) for (int j=-1; j<=1; j+=2) {
+    /*for (int i=0; i<3; i++) for (int j=-1; j<=1; j+=2) {
         vec3 pos, rot; 
         vec3_set(pos, VEC3_ZERO);
 
@@ -58,7 +84,29 @@ static void buildVerse(VerseInstance* self, GLFWwindow* window) {
                 case 3: PartSetRotation(nwp, (vec3){0,-90,90}); break;
             }
         }
+    }*/
+
+    // Add in Jumps
+    mat4x4 CFA, CFB, M;
+    mat4x4_translate(CFA, -5,0,0);
+    mat4x4_rotate_Y(CFA, CFA, TO_RAD*90);
+    mat4x4_identity(CFB);
+    mat4x4_rotate_Y(CFB, CFB, 180*TO_RAD);
+    mat4x4_translate_in_place(CFB, -30,0,0);
+    mat4x4_rotate_Y(CFB, CFB, TO_RAD*80);
+
+    // Make a jump
+    JumpInstance *j;
+    VerseAddJump(self, j = NewJumpInstance()); {
+        JumpSetCFrames(j, CFA, CFB);
+        JumpConnectVerses(j, self, self);
+        j->Radius=5;
     }
+    DrawVerseAt(self, CFA, (color3){255,0,0});
+    DrawVerseAt(self, CFB, (color3){0,255,0});
+
+    
+    
 
     // Floor
     {

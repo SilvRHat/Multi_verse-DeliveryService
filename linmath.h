@@ -25,7 +25,18 @@
         __typeof__ (v) _v1 = (_v > _min ? _v : _min);\
         _v1 < _max ? _v1 : _max; \
     })
-
+#define max(v,m) \
+({\
+	__typeof__ (v) _v = (v);\
+	__typeof__ (m) _m = (m);\
+	_v > _m ? _v : _m; \
+})
+#define min(v,m) \
+({\
+	__typeof__ (v) _v = (v);\
+	__typeof__ (m) _m = (m);\
+	_v < _m ? _v : _m; \
+})
 
 #define LINMATH_H_DEFINE_VEC(n) \
 typedef float vec##n[n]; \
@@ -233,6 +244,12 @@ static inline void mat4x4_from_vec3_mul_outer(mat4x4 M, vec3 a, vec3 b)
 	for(i=0; i<4; ++i) for(j=0; j<4; ++j)
 		M[i][j] = i<3 && j<3 ? a[i] * b[j] : 0.f;
 }
+static inline void mat4x4_from_rot(mat4x4 R, mat4x4 M)
+{
+	mat4x4_identity(R);
+	for (int i=0; i<2; i++)
+		mat4x4_col(R[i],M,i);
+}
 static inline void mat4x4_rotate(mat4x4 R, mat4x4 M, float x, float y, float z, float angle)
 {
 	float s = sinf(angle);
@@ -309,6 +326,7 @@ static inline void mat4x4_invert(mat4x4 T, mat4x4 M)
 	float idet;
 	float s[6];
 	float c[6];
+	mat4x4 temp;
 	s[0] = M[0][0]*M[1][1] - M[1][0]*M[0][1];
 	s[1] = M[0][0]*M[1][2] - M[1][0]*M[0][2];
 	s[2] = M[0][0]*M[1][3] - M[1][0]*M[0][3];
@@ -326,25 +344,26 @@ static inline void mat4x4_invert(mat4x4 T, mat4x4 M)
 	/* Assumes it is invertible */
 	idet = 1.0f/( s[0]*c[5]-s[1]*c[4]+s[2]*c[3]+s[3]*c[2]-s[4]*c[1]+s[5]*c[0] );
 
-	T[0][0] = ( M[1][1] * c[5] - M[1][2] * c[4] + M[1][3] * c[3]) * idet;
-	T[0][1] = (-M[0][1] * c[5] + M[0][2] * c[4] - M[0][3] * c[3]) * idet;
-	T[0][2] = ( M[3][1] * s[5] - M[3][2] * s[4] + M[3][3] * s[3]) * idet;
-	T[0][3] = (-M[2][1] * s[5] + M[2][2] * s[4] - M[2][3] * s[3]) * idet;
+	temp[0][0] = ( M[1][1] * c[5] - M[1][2] * c[4] + M[1][3] * c[3]) * idet;
+	temp[0][1] = (-M[0][1] * c[5] + M[0][2] * c[4] - M[0][3] * c[3]) * idet;
+	temp[0][2] = ( M[3][1] * s[5] - M[3][2] * s[4] + M[3][3] * s[3]) * idet;
+	temp[0][3] = (-M[2][1] * s[5] + M[2][2] * s[4] - M[2][3] * s[3]) * idet;
 
-	T[1][0] = (-M[1][0] * c[5] + M[1][2] * c[2] - M[1][3] * c[1]) * idet;
-	T[1][1] = ( M[0][0] * c[5] - M[0][2] * c[2] + M[0][3] * c[1]) * idet;
-	T[1][2] = (-M[3][0] * s[5] + M[3][2] * s[2] - M[3][3] * s[1]) * idet;
-	T[1][3] = ( M[2][0] * s[5] - M[2][2] * s[2] + M[2][3] * s[1]) * idet;
+	temp[1][0] = (-M[1][0] * c[5] + M[1][2] * c[2] - M[1][3] * c[1]) * idet;
+	temp[1][1] = ( M[0][0] * c[5] - M[0][2] * c[2] + M[0][3] * c[1]) * idet;
+	temp[1][2] = (-M[3][0] * s[5] + M[3][2] * s[2] - M[3][3] * s[1]) * idet;
+	temp[1][3] = ( M[2][0] * s[5] - M[2][2] * s[2] + M[2][3] * s[1]) * idet;
 
-	T[2][0] = ( M[1][0] * c[4] - M[1][1] * c[2] + M[1][3] * c[0]) * idet;
-	T[2][1] = (-M[0][0] * c[4] + M[0][1] * c[2] - M[0][3] * c[0]) * idet;
-	T[2][2] = ( M[3][0] * s[4] - M[3][1] * s[2] + M[3][3] * s[0]) * idet;
-	T[2][3] = (-M[2][0] * s[4] + M[2][1] * s[2] - M[2][3] * s[0]) * idet;
+	temp[2][0] = ( M[1][0] * c[4] - M[1][1] * c[2] + M[1][3] * c[0]) * idet;
+	temp[2][1] = (-M[0][0] * c[4] + M[0][1] * c[2] - M[0][3] * c[0]) * idet;
+	temp[2][2] = ( M[3][0] * s[4] - M[3][1] * s[2] + M[3][3] * s[0]) * idet;
+	temp[2][3] = (-M[2][0] * s[4] + M[2][1] * s[2] - M[2][3] * s[0]) * idet;
 
-	T[3][0] = (-M[1][0] * c[3] + M[1][1] * c[1] - M[1][2] * c[0]) * idet;
-	T[3][1] = ( M[0][0] * c[3] - M[0][1] * c[1] + M[0][2] * c[0]) * idet;
-	T[3][2] = (-M[3][0] * s[3] + M[3][1] * s[1] - M[3][2] * s[0]) * idet;
-	T[3][3] = ( M[2][0] * s[3] - M[2][1] * s[1] + M[2][2] * s[0]) * idet;
+	temp[3][0] = (-M[1][0] * c[3] + M[1][1] * c[1] - M[1][2] * c[0]) * idet;
+	temp[3][1] = ( M[0][0] * c[3] - M[0][1] * c[1] + M[0][2] * c[0]) * idet;
+	temp[3][2] = (-M[3][0] * s[3] + M[3][1] * s[1] - M[3][2] * s[0]) * idet;
+	temp[3][3] = ( M[2][0] * s[3] - M[2][1] * s[1] + M[2][2] * s[0]) * idet;
+	mat4x4_dup(T, temp);
 }
 static inline void mat4x4_orthonormalize(mat4x4 R, mat4x4 M)
 {
@@ -470,6 +489,7 @@ static inline void mat4x4_look_at(mat4x4 m, vec3 eye, vec3 center, vec3 up)
 
 	mat4x4_translate_in_place(m, -eye[0], -eye[1], -eye[2]);
 }
+
 
 typedef float quat[4];
 static inline void quat_identity(quat q)
@@ -617,6 +637,34 @@ static inline void quat_from_mat4x4(quat q, mat4x4 M)
 	q[1] = (M[p[0]][p[1]] - M[p[1]][p[0]])/(2.f*r);
 	q[2] = (M[p[2]][p[0]] - M[p[0]][p[2]])/(2.f*r);
 	q[3] = (M[p[2]][p[1]] - M[p[1]][p[2]])/(2.f*r);
+}
+
+
+// Credit to StickMasterLuke
+// Translated from Lua
+// Sourced from: https://devforum.roblox.com/t/getting-the-point-of-intersection-on-a-plane/13625/2
+static inline void line_plane_intersection(vec3 r, vec4 line_point, vec4 line_direction, vec4 plane_point, vec4 plane_normal)
+{
+	float denominator = vec3_mul_inner(line_direction, plane_normal);
+	
+	if (denominator==0.f) {
+		vec3_set(r, line_point);
+		return;
+	}
+	
+	vec3 diff;
+	vec3_sub(diff, plane_point, line_point);
+	
+	float distance = vec3_mul_inner(diff, plane_normal) / denominator;
+	vec3_scale(r, line_direction, distance);
+	vec3_add(r,r, line_point);
+}
+
+static inline float line_plane_angle(vec3 line_direction, vec3 plane_normal)
+{
+	float denominator = vec3_magnitude(line_direction) * vec3_magnitude(plane_normal);
+	return (denominator!=0.f) ? 
+		asin(vec3_mul_inner(line_direction, plane_normal) / denominator) : 0.f;
 }
 
 #endif

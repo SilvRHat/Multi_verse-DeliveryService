@@ -16,20 +16,21 @@ void cameraInit(GLFWwindow* window) {
     Camera.Focus = 10;
     Camera.az = 0;
     Camera.ph = 0;
-    Camera.HomeVerse = 0;
-    Camera.ViewVerse = 0;
     Camera.Name = "CurrentCamera";
+    Camera.HomeVerse = &HOME_VERSE;
+    Camera.ViewVerse = &HOME_VERSE;
+    for (int i=0; i<MAX_LENS; i++) {
+        Camera.Lens[i].Jump = NULL;
+        vec3_set(Camera.Lens[i].ViewPosition, VEC3_ZERO);
+    }
 
     mat4x4_translate(Camera.CFrame, 0, 0, 0);
-    mat4x4_dup(Camera.ViewCFrame, Camera.CFrame);
-    mat4x4_translate_in_place(Camera.ViewCFrame, 0,0, -Camera.Focus);
+    cameraStep(window, 0, 0);
 }
 
 
 void cameraStep(GLFWwindow* window, double t, double step) {
-    ErrCheck("ERRCHK IN: cameraStep()");
-
-    mat4x4 M;
+    mat4x4 M, ZoomFrame;
 
     // Build Rotation
     mat4x4_identity(M);
@@ -41,8 +42,23 @@ void cameraStep(GLFWwindow* window, double t, double step) {
     mat4x4_dup(Camera.CFrame, M);
 
     // Zoom out
-    mat4x4_dup(Camera.ViewCFrame, M);
-    mat4x4_translate_in_place(Camera.ViewCFrame, 0,0,Camera.Focus);
+    // TODO: ADD IN LENS (If it crosses a jump, make translation, subtract dist, repeat)
+    mat4x4_dup(ZoomFrame, M);
+    /*for (int i=0; i<MAX_LENS; i++) {
+        JumpLens* lens = &Camera.Lens[i];
+        if (lens->Jump == NULL)
+            break;
+
+        vec3 hit;
+        vec4 campos, camlook, jumppos, jumplook;
+        mat4x4_col(camlook, ZoomFrame, 2); 
+        mat4x4_col(campos, ZoomFrame, 3); 
+        
+        line_plane_intersection(hit, campos, camlook, );
+    }*/
+    
+    mat4x4_translate_in_place(ZoomFrame, 0,0,Camera.Focus);
+    mat4x4_dup(Camera.ViewCFrame, ZoomFrame);
 }
 
 
@@ -73,7 +89,8 @@ void cameraCursorInput(GLFWwindow* window, double xpos, double ypos) {
             Camera.ph -= dy * TO_RAD / 2.0;
             Camera.ph = clamp(Camera.ph, -MAX_INCLINATION_ANG*TO_RAD, MAX_INCLINATION_ANG*TO_RAD);
             Camera.az = fmod(Camera.az, 360.0*TO_RAD); Camera.ph = fmod(Camera.ph, 360.0*TO_RAD);
-    }}
+        }
+    }
 #endif
     xpos0 = xpos;
     ypos0 = ypos;
@@ -85,13 +102,13 @@ void cameraScrollInput(GLFWwindow* window, double xoffset, double yoffset) {
 }
 
 
-void GetCameraView(mat4x4 CFrame, int* ViewVerse) {
-    mat4x4_dup(CFrame, Camera.ViewCFrame);
-    *ViewVerse = Camera.ViewVerse;
-};
-
-
-void GetCameraFocus(mat4x4 CFrame, int* HomeVerse) {
+void GetCameraHome(mat4x4 CFrame, VerseInstance** verse) {
     mat4x4_dup(CFrame, Camera.CFrame);
-    *HomeVerse = Camera.HomeVerse;
+    *verse = Camera.HomeVerse;
 }
+
+
+void GetCameraView(mat4x4 CFrame, VerseInstance** verse) {
+    mat4x4_dup(CFrame, Camera.ViewCFrame);
+    *verse = Camera.ViewVerse;
+};

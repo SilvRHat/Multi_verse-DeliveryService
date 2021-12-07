@@ -4,9 +4,9 @@
 //  Input Color
 uniform vec4  Color;
 //  Fragment color
-layout(location = 0) out vec4 FragColor;
+layout(location = 0) out vec4 OutDiffuseColor;
 
 void main()
 {
-   FragColor = Color;
+   OutDiffuseColor = Color;
 }

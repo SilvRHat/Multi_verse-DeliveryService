@@ -38,8 +38,6 @@ static void drawFrustumCone(PartInstance* p) {
     glDrawArrays(GL_TRIANGLE_FAN, 2*(sides+1) + sides+2, sides+2);
 }
 static void drawFromLineStrip(PartInstance* p) {
-    GLint range[2];
-    glGetIntegerv(GL_SMOOTH_LINE_WIDTH_RANGE, range);
     glEnable(GL_LINE_SMOOTH);
     glDrawArrays(GL_LINE_STRIP, 0, p->Vertices);
 }
@@ -132,11 +130,11 @@ PartInstance* line(int n, vec4 pts[]) {
         for (int i=0; i<n; i++) {
             int off = i * VERTEX_DATA_ROW;
             vec4_set((float*) (verts+off), pts[i]);             // Position
-            vec3_set((float*) (verts+off+3), (vec4){0,0,1});    // Normal
+            vec3_set((float*) (verts+off+4), (vec4){0,0,1});    // Normal
         }
     }
     buildVAOVBO(&vao, &vbo, verts, sizeof(verts));
-
+    
     // Create Instance
     PartInstance* p = NewPartInstance();
     p->Draw = drawFromLineStrip;
@@ -215,7 +213,7 @@ PartInstance* circle(int sides, double radius) {
         {
             // Triangle Fan
             int off=0;
-            vec4_zero((float*) verts);              // Position
+            vec4_set((float*) verts, UNIT4_W);              // Position
             vec3_set((float*) (verts+4), UNIT3_Y);  // Normal
             for (int i=1; i<sides+2; i++) {
                 double a = (float)i * 360.f / (float)sides; // Angle
@@ -504,7 +502,7 @@ PartInstance* cone(int sides, double rad0, double rad1, double depth) {
                 // Calculate Normal
                 float sl = 1/(rad0-rad1); 
                 double b = atanf(sl);
-                vec3 normal = {cosf(b)*sinf(a*TO_RAD), cosf(b), cosf(b)*cosf(a*TO_RAD)};
+                vec3 normal = {cosf(b)*cosf(a*TO_RAD), cosf(b), cosf(b)*sinf(a*TO_RAD)};
 
                 vec4_set((float*) (verts+off), p1);         // Vert1 Position
                 vec3_set((float*) (verts+off+4), normal);   // Vert1 Normal
@@ -524,8 +522,8 @@ PartInstance* cone(int sides, double rad0, double rad1, double depth) {
                 vec3_set((float*) (verts+off1+4), normal);
                 for (int i=0; i<sides+1; i++) {
                     int off = (i+1) * VERTEX_DATA_ROW + off1;
-                    double a = (float)i * (360.0/(float)sides); // Angle
-                    vec4 pos = {s*cosf(a*TO_RAD), sgn*s0, sgn * s*sinf(a*TO_RAD), 1};
+                    double a = 360-((float)i * (360.0/(float)sides)); // Angle
+                    vec4 pos = {s*sinf(a*TO_RAD), sgn*s0, sgn* s*cosf(a*TO_RAD), 1};
 
                     vec4_set((float*) (verts+off), pos);        // Position
                     vec3_set((float*) (verts+off+4), normal);   // Normal
@@ -676,6 +674,30 @@ void JumpConnectVerses(JumpInstance* j, VerseInstance* v0, VerseInstance* v1) {
 void JumpSetCFrames(JumpInstance* j, mat4x4 CF0, mat4x4 CF1) {
     mat4x4_dup(j->CFrame0, CF0);
     mat4x4_dup(j->CFrame1, CF1);
+
+    // Calculate a matrix to translate CFrames between verses
+    // Repeat for both sides
+    for (int k=0; k<2; k++) {
+        mat4x4 ToB, M;
+        
+        // First apply source CFrame matrix
+        // This exists in the current
+        mat4x4_dup(ToB, (!k)? CF0 : CF1); // Source
+        
+        // Rotate by 180 degrees (in place)
+        // This is because portals always are drawn in the same direction, but are opposite ends in translated space
+        mat4x4_identity(M);
+        mat4x4_rotate_Y(M,M,180*TO_RAD);
+        mat4x4_mul(ToB, ToB, M);
+
+        // Apply inverse of destination CFrame
+        // Similar to Camera, we want the offset of the jump to the desination verses's origin
+        mat4x4_invert(M, (!k)? CF1 : CF0);
+        mat4x4_mul(ToB, ToB, M);
+
+        // Set appropriate property
+        mat4x4_dup((!k)? j->_ToV1 : j->_ToV0, ToB); // Output Translation
+    }
 }
 
 
@@ -845,4 +867,3 @@ GLuint BuildShaderFromFile(GLenum type, char* filename) {
     printShaderLog(shader, filename);
     return shader;
 }
-
