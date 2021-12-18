@@ -78,6 +78,7 @@ PartInstance* NewPartInstance() {
     vec3_zero(p->Size);
     vec3_zero(p->Position);
     vec3_zero(p->Rotation);
+    vec3_zero(p->Pivot);
 
     p->Vao = 0;
     p->Vbo = 0;
@@ -523,7 +524,7 @@ PartInstance* cone(int sides, double rad0, double rad1, double depth) {
                 for (int i=0; i<sides+1; i++) {
                     int off = (i+1) * VERTEX_DATA_ROW + off1;
                     double a = 360-((float)i * (360.0/(float)sides)); // Angle
-                    vec4 pos = {s*sinf(a*TO_RAD), sgn*s0, sgn* s*cosf(a*TO_RAD), 1};
+                    vec4 pos = {s*sinf(sgn*a*TO_RAD), sgn*s0, s*cosf(sgn*a*TO_RAD), 1};
 
                     vec4_set((float*) (verts+off), pos);        // Position
                     vec3_set((float*) (verts+off+4), normal);   // Normal
@@ -559,6 +560,37 @@ PartInstance* clonePart(PartInstance* src) {
 
 
 
+// Translated from hw4 w/ Legacy OpenGL
+void partArc(VerseInstance* self, PartInstance* arcit,
+        vec3 pos, vec3 rot, vec3 scale, 
+        double a, double width, int n
+    ) {
+    mat4x4 M;
+    mat4x4_identity(M);
+    mat4x4_scale_aniso(M, M, scale[0], scale[1], scale[2]);
+    mat4x4_rotate_Y(M, M, rot[1]);
+    mat4x4_rotate_Z(M, M, rot[2]);
+    mat4x4_rotate_X(M, M, rot[0]);
+    vec3_set(M[3], pos);
+    
+    double dp = (width/2) / tan(a/2*TO_RAD);
+    double r = sqrt(pow(dp,2))+pow(width/2,2);
+    for (int i=0; i<n; i++) {
+        double ang = -(a/2) + (i*(a/(n-1+1e-5)));
+        double x = r * sin(ang * TO_RAD);
+        double y = r * cos(ang * TO_RAD) - dp;
+
+        PartInstance *nwp;
+        VerseAddPart(self, nwp = clonePart(arcit)); {
+            PartSetPosition(nwp, (vec3){x,y,0});
+            PartSetRotation(nwp, (vec3){0,0,-ang});
+            mat4x4_mul(nwp->CFrame, M, nwp->CFrame);
+        }
+    }
+}
+
+
+
 // Part Instance Methods
 void PartSetColor(PartInstance* p, color3 c) {
     for (int i=0; i<3; i++) 
@@ -566,26 +598,22 @@ void PartSetColor(PartInstance* p, color3 c) {
 }
 
 void PartSetCFrame(PartInstance* p, mat4x4 cf) {
-    vec4 pos, rot;
+    vec4 pos;
     //float rx, ry, rz;
 
     // TODO
     // Find YXZ Euler Angles from Rotation Matrix
     // Credit: http://eecs.qmul.ac.uk/~gslabaugh/publications/euler.pdf
-    /*if (1 - fabsf(cf[0][2]) < 1e-3) {
-
-    }
-    else { 
-        // Gimbal lock edge case
-
-    */
 
     mat4x4_dup(p->CFrame, cf);
     mat4x4_col(pos, cf, 3);
     for (int i=0; i<3; i++) {
         p->Position[i]=pos[i];
-        p->Rotation[i]=rot[i];
     }
+}
+
+void PartSetPivot(PartInstance* p, vec3 pivot) {
+    vec3_set(p->Pivot, pivot);
 }
 
 void PartSetSize(PartInstance* p, vec3 s) {
@@ -596,9 +624,9 @@ void PartSetSize(PartInstance* p, vec3 s) {
 void PartSetPosition(PartInstance* p, vec3 pos) {
     mat4x4 temp;
     for (int i=0; i<3; i++) 
-        p->Position[i]=pos[i];
+        p->Position[i]=pos[i] - (p->Pivot[i]*p->Size[i]);
     
-    mat4x4_translate(temp, pos[0], pos[1], pos[2]);
+    mat4x4_translate(temp, p->Position[0], p->Position[1], p->Position[2]);
     for (int r=0; r<3; r++) for (int c=0; c<3; c++)
         temp[r][c]=p->CFrame[r][c];
     mat4x4_dup(p->CFrame, temp);

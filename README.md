@@ -16,54 +16,38 @@ My motivation for developing Mv-DS was to create a unique game based soley aroun
 ## Running
 Running the program
 To compile, run: <code>make</code>
-To run program, run: <code>./Mv-DS</code>
+To run program, run: <code>./final</code>
 
 
 ## Controls
-    Control                     Description
--   MouseWheel                  Zoom In/ Out
--   Right Mouse Button          Move Camera (DEV MODE)
--   Middle Mouse Button         Move Camera (DEV MODE)
--   Scroll Wheel                Zoom In/ Out
+    Control                         Description
+-   Scroll Wheel                    Zoom In/ Out
+-   Right Mouse Button              Rotate Camera
+-   RIGHT Mouse Button + SHIFT      Move Camera
+-   Middle Mouse Button             Rotate Camera
+-   Middle Mouse Button + SHIFT     Move Camera
+-   WASD                            Move Camera
 
 
-
-## Project Review
-My project review demonstrates the technology/ framework of my project. This includes:
-- Mouse-Based Camera Controller 
-- Instances/ objects including (line, plane, circle, cube, sphere, cone, frustum)
-- Drawing pipeline (scene to render, objects to cull, animations to play, etc.)
-- Simple shader
-- Simple scene
+## Status
+Developing this game has been beyond fun- but its nowhere near done and I can't wait to get it there over winter break. And getting to the project submission deadline I also think my exisiting codebase makes for a great submission. So enjoy reading about the crazy stuff I made below!
 
 
-In the last week I plan on adding the majority of my content, including:
-- Scene 'jumping' (Portal logic)
-- Character
-- 4 more scenes (all fully planned out with concept art)
-    - Chracter home universe (half-built room)
-    - Expansion of my hw4; torri gate/ waterfall scene
-    - Igloo village
-    - Technology city
-- New Shaders
+## Check these parts out:
+- Portal implementation: This was a main feature I had described in my proposal and is one of the most involved pieces in my code.
+    - Portals are tracked by a 'JumpInstance' which holds two homogenous coordinates which I call CFrames (coordinate frames). Defined in [objects.h 84:0].
+    - When JumpSetCFrames() is called, the two CFrames are set along with pre-computed translation CFrames (_ToV0, _ToV1). [objects.c 748:0]. These matrices allow the origin of an external scene (with its own coordinate system) to be treated as an offset. 
+    - Rendering with portals is a two step process. The first step is gathering what scenes should be rendered and at what offset. [render.c 123:0 to 221:0]. We actually need these in order of depth to properly render, so we step through each scene and populate a 'RenderStack' until it is full.
+        - For performance, I implemented a portal-culling technique that will only render external scenes if they are visible through all the portals taken to get there. To test this, I keep track of a bounding box in NDC coordinates. [render.c 175:0]. I've provided a video of this specific implementation in the /doc folder.
+    - The second step of rendering portals involves using the stencil buffer. First, the farthest scene needs to be rendered so that the closer scenes don't populate it with objects. 
+        - Because of this behaviour, we need to use GL_INCR in the glStencilOp to ensure that the individual pixel is visible through all portals.
+        - After setting the stencil buffer and rendering the external scene (with clipping), a z-depth-only pass on the individual portal shields closer scenes from writing into that space.
+    - Sadly, you cannot go through portals yet due to difficulty in how the camera controller is setup (using angles which requires euler angle calculations from homogenous coordinates). The method of crossing through a portal with a third person camera also comes with many occlusion problems - not to say I don't already have a method of combatting them.
 
+- Signal-based programming: This adheres to the event-programming model discussed in lecture 2- and allows for easy animation. Every time the scene is rendered, it fires a signal that calls back any connected functions. I use this to animate my scene.
 
-PROGRESS STATEMENT: I'm behind in my project's visual content - I had attempted a lot of setup converting my code structure to work with glfw and OpenGL 3.0+, without a good knowledge/estimate of the time it would take. However, I feel that this setup has greatly benefited my knowledge of graphics concepts/tools; and enabled powerful development for this game. 
+- Various objects drawn with triangle primitives: I've drawn many of the simple objects in VBOs often using triangle-strips to reduce vertices. Certain objects (such as spheres) allow specification on the number of vertices; which I've standarized allowing for VBO reuse in addition to custom generation of objects. This allows for the design of complex scenes from simple building blocks. I've also built a function for building arcs out of any part.
 
-
-Some components I'm proud of:
-- Camera controller; Is mouse based allowing easy viewing & quick development. Built with custom 4D matrix operations and contains 2 positions (viewing position, and a pivot position). A public function allows other code to retrieve both positions, which can be made to set the character position.
-- Signal Pattern; I've involved signals in various pieces of my code which allow the dynamic binding/unbinding of functions (similar to callbacks). Each scene/verse invokes a signal when rendered allowing animations per object to run. This can also be used to supliment billboards, where the rotation is set the same as the camera.
-- Rendering pipeline: In my render.c file, I enable rendering a scene by an array of object data. This will allow me to find all scenes I need to render, offsets to make, and the rending of many dynamic scenes for portal logic. In this process I can cull objects.
-- VAO/VBO based objects: I've drawn many of the simple objects in VBOs often using triangle-strips to reduce vertices. Certain objects (such as spheres) allow specification on the number of vertices; which I've standarized allowing for VBO reuse in addition to custom generation of objects.
-
-
-Additional:
-This project has been the most fun coding I've done in a while - and I've enjoyed putting a lot of freetime into it. I plan on using this as a launching piece in my career, publishing it and showcasing it in my portfolio. I'm happy to work on this past the semester and deadline, but I've found this has made me patient in progress on deliverables. In your feedback, please feel free to let me know a good way to combat this and adjut my focus to be successful in the final deliverable - as I know I may have shifted off track.
-
-OpenGL concepts used:
-- OpenGL Geometry instancing [For performance]
-- Geometry shaders [For visual effects]
 
 
 
@@ -71,4 +55,4 @@ OpenGL concepts used:
 My project uses the OpenGL 3+ Syntax/ Core Profile - in which many of the OpenGL 2.0 concepts we've learned in class have been deprecated. I though to provide some insight and reasoning on why I pursued this path, because it did take a lot of time for the setup of basic elements.
  - Did I really need OpenGL 4.0 for my project? No. OpenGL 2.0/ Fixed pipeline is incredibly versatile on its own and I have no doubt that I would have been able to accomplish a lot without OpenGL 3+.
  - So why? Well, I really I wanted to get into the low level pieces and get a deep understanding of many graphics concepts beyond whats taught in class. And I did! I learned how I should use VAOs/ VBOS, how they differ, the internal mechanics of shaders, how to use transformation matrices for everything, and a lot more.
- - What I gained? Pipeline Control (which I greatly plan on using). Building a customized pipeline - I was able to utilize VAO/VBOs to save computation cost. Current shader concepts including geometrey shaders (which I plan on using). And a STRONG/ versatile codebase, objects are often built once and rendered/drawn when needed on a per-part basis.
+ - [UPDATED] What I gained? I especially plan on utilizing the instancing versions for drawing objects so as to reduce CPU/GPU communication bottlenecks. And I plan on using geometry shaders for various effects on character and on environment such as rendering lines to showcase wind. Many of my objects are built with the same shader and VBO, thus instancing is very suitable for larger development.

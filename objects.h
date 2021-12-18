@@ -37,8 +37,12 @@
 #define INST_LOW_RINGS  8
 #define INST_XLO_RINGS  4
 
-#define DRAWMODE_FILLED 0
-#define DRAWMODE_LINE   1
+#define PIVOT_BOTTOM    (vec3){0,-.5,0}
+#define PIVOT_TOP       (vec3){0, .5,0}
+#define PIVOT_LEFT      (vec3){-.5,0,0}
+#define PIVOT_RIGHT     (vec3){ .5,0,0}
+#define PIVOT_FORWARD   (vec3){0,0, .5}
+#define PIVOT_BACK      (vec3){0,0,-.5}
 
 // Shader Layout
 #define ATTRIB_POS_VERTEX           5
@@ -60,6 +64,7 @@ struct PartInstance_s {
     vec3 Size;
     vec3 Position;
     vec3 Rotation;
+    vec3 Pivot;
     // Vertices Data
     GLuint Vao, Vbo;
     unsigned int Triangles, Vertices;
@@ -131,21 +136,24 @@ PartInstance* circle(int sides, double radius);
 PartInstance* cube(double size);
 PartInstance* uvSphere(int segments, int rings, double radius);
 PartInstance* cylinder(int sides, double radius, double depth);
-PartInstance* cone(int sides, double rad1, double rad0, double depth);
-//PartInstance* wedge(double size); // TODO
-//PartInstance* wedgecorner(double size); // TODO
+PartInstance* cone(int sides, double rad0, double rad1, double depth);
 
 // Loadable Objects
 // PartInstance* meshFromObj(int* name, char* objpath); // TODO
 PartInstance* clonePart(PartInstance* p);
 
 // Custom Objects
-    // NONE
+PartInstance* frustum(double size0, double width1, double length1);
+void partArc(VerseInstance* self, PartInstance* arcit,
+    vec3 pos, vec3 rot, vec3 scale, 
+    double a, double width, int n
+);
 
 
 // Part Methods
 void PartSetColor(PartInstance* p, color3 c);
 void PartSetCFrame(PartInstance* p, mat4x4 cf);
+void PartSetPivot(PartInstance* p, vec3 pivot);
 void PartSetSize(PartInstance* p, vec3 s);
 void PartSetPosition(PartInstance* p, vec3 pos);
 void PartSetRotation(PartInstance* p, vec3 r);

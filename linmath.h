@@ -166,10 +166,12 @@ static inline void mat4x4_col(vec4 r, mat4x4 M, int i)
 }
 static inline void mat4x4_transpose(mat4x4 M, mat4x4 N)
 {
+	mat4x4 T;
 	int i, j;
 	for(j=0; j<4; ++j)
 		for(i=0; i<4; ++i)
-			M[i][j] = N[j][i];
+			T[i][j] = N[j][i];
+	mat4x4_dup(M,T);
 }
 static inline void mat4x4_add(mat4x4 M, mat4x4 a, mat4x4 b)
 {

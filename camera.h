@@ -20,7 +20,8 @@
 #define MAX_LENS 16
 #define MAX_INCLINATION_ANG 80
 #define MIN_FOCUS 1
-#define MAX_FOCUS 25
+#define MAX_FOCUS 120
+#define CHARACTER_SPEED 16
 
 
 // CLASSES

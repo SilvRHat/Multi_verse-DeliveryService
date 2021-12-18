@@ -22,12 +22,14 @@
 #define MAX_RENDER_JUMP_DEPTH 32
 #define MAX_RENDER_VERSES 128
 struct JumpRenderData_s {
+    // Book Keeping
+    int Depth;
+    void *Travel[MAX_RENDER_JUMP_DEPTH];
+    double Radius;
     // Translation
     VerseInstance* VerseTo;
-    JumpInstance* Jump;
     mat4x4 OffsetFrom, OffsetTo;
     // Validation 
-    int Depth;
     vec4 Bounds;
     float Z_Bound;
 };
@@ -39,5 +41,6 @@ void renderInit(GLFWwindow* window);
 void renderExit(GLFWwindow* window);
 void renderStep(GLFWwindow* window, double t, double step);
 void DrawInstance(PartInstance* part);
+
 
 #endif

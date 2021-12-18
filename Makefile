@@ -6,11 +6,11 @@
 
 # Source
 SRC_MAIN = main.c 
-SRC_SYS = signal.c camera.c render.c objects.c multiverse.c gate.c
+SRC_SYS = signal.c camera.c render.c objects.c multiverse.c gate.c lpg.c
 SRC_VRS = home.c
 
-HDR = game.h signal.h camera.h render.h objects.h linmath.h home.h multiverse.h gate.h
-EXE = Mv-DS
+HDR = game.h signal.h camera.h render.h objects.h linmath.h home.h multiverse.h gate.h lpg.h
+EXE = final
 
 all: $(EXE)
 SRCO = $(SRC_MAIN:.c=.o) $(SRC_SYS:.c=.o) $(SRC_VRS:.c=.o)

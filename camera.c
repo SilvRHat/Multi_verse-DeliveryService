@@ -17,8 +17,8 @@ void cameraInit(GLFWwindow* window) {
     Camera.az = 0;
     Camera.ph = 0;
     Camera.Name = "CurrentCamera";
-    Camera.HomeVerse = &HOME_VERSE;
-    Camera.ViewVerse = &HOME_VERSE;
+    Camera.HomeVerse = &LIGHT_PLAY_VERSE;
+    Camera.ViewVerse = &LIGHT_PLAY_VERSE;
     for (int i=0; i<MAX_LENS; i++) {
         Camera.Lens[i].Jump = NULL;
         vec3_set(Camera.Lens[i].ViewPosition, VEC3_ZERO);
@@ -32,6 +32,22 @@ void cameraInit(GLFWwindow* window) {
 void cameraStep(GLFWwindow* window, double t, double step) {
     mat4x4 M, ZoomFrame;
 
+    // Character Controls
+    vec2 charmove = {
+        -glfwGetKey(window, GLFW_KEY_A) + glfwGetKey(window, GLFW_KEY_D),   // Horizontal inputs; left/right
+        -glfwGetKey(window, GLFW_KEY_S) + glfwGetKey(window, GLFW_KEY_W)    // Vertical inputs; forward/backward
+    };
+    if (vec2_magnitude(charmove)>0) {
+        // Normalize so that speed is constance
+        vec2_norm(charmove, charmove);
+        // Apply speed
+        vec2_scale(charmove, charmove, CHARACTER_SPEED);
+        mat4x4_translate(M, charmove[0]*step, 0, -charmove[1]*step);
+        mat4x4_mul(Camera.CFrame, Camera.CFrame, M);
+    }
+    
+
+    // Build Camera CFrame
     // Build Rotation
     mat4x4_identity(M);
     mat4x4_rotate_Y(M, M, Camera.az);
@@ -41,22 +57,8 @@ void cameraStep(GLFWwindow* window, double t, double step) {
     vec4_set(M[3], Camera.CFrame[3]);
     mat4x4_dup(Camera.CFrame, M);
 
-    // Zoom out
-    // TODO: ADD IN LENS (If it crosses a jump, make translation, subtract dist, repeat)
+    // Zoom Out
     mat4x4_dup(ZoomFrame, M);
-    /*for (int i=0; i<MAX_LENS; i++) {
-        JumpLens* lens = &Camera.Lens[i];
-        if (lens->Jump == NULL)
-            break;
-
-        vec3 hit;
-        vec4 campos, camlook, jumppos, jumplook;
-        mat4x4_col(camlook, ZoomFrame, 2); 
-        mat4x4_col(campos, ZoomFrame, 3); 
-        
-        line_plane_intersection(hit, campos, camlook, );
-    }*/
-    
     mat4x4_translate_in_place(ZoomFrame, 0,0,Camera.Focus);
     mat4x4_dup(Camera.ViewCFrame, ZoomFrame);
 }
@@ -72,7 +74,7 @@ void cameraCursorInput(GLFWwindow* window, double xpos, double ypos) {
 
     dx = xpos - xpos0;
     dy = ypos - ypos0;
-#ifdef DEVMODE
+    // Developer controls 
     if (
         glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) || 
         glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_MIDDLE)
@@ -91,7 +93,7 @@ void cameraCursorInput(GLFWwindow* window, double xpos, double ypos) {
             Camera.az = fmod(Camera.az, 360.0*TO_RAD); Camera.ph = fmod(Camera.ph, 360.0*TO_RAD);
         }
     }
-#endif
+
     xpos0 = xpos;
     ypos0 = ypos;
 }
@@ -100,6 +102,8 @@ void cameraCursorInput(GLFWwindow* window, double xpos, double ypos) {
 void cameraScrollInput(GLFWwindow* window, double xoffset, double yoffset) {
     Camera.Focus = clamp(Camera.Focus - (yoffset/2.0), MIN_FOCUS, MAX_FOCUS);
 }
+
+
 
 
 void GetCameraHome(mat4x4 CFrame, VerseInstance** verse) {

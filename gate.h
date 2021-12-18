@@ -10,8 +10,10 @@
 #include "objects.h"
 #include "linmath.h"
 #include "multiverse.h"
+#include "render.h"
 
 #include <stdlib.h>
+#include <stdarg.h>
 
 // VERSE
 // @brief Verse#3 - Gate

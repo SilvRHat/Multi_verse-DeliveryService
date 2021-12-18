@@ -21,9 +21,9 @@ extern VerseInstance HOME_VERSE;
 // This is the home of Mv-DSR3 [Multi_verse DeliveryServiceRobot #3] or 3MɅ (Pronounced E-mah)
 // 3MɅ's was the third robot designed by the ghost Noir, who had spent several months on gathering
 // materials and designing special technology for multiverse jumping. Noir had come across unique
-// glass lens which mirrored the intersection of human and spirit universes, which allowed her to
+// glass lenses which mirrored the intersection of human and spirit universes, which allowed her to
 // interact with the human world as a ghost spirit. With a passion in robotics and inventing, she
-// discovered a method of locating multiversed intersections using special lens and had set out to
+// discovered a method of locating multiversed intersections using the special lens and had set out to
 // create 3MɅ. 3MɅ was created to traverse the multiverses and had on its own found a passion in
 // delivering mail as the sole Multi-Verse Delivery service.
 
