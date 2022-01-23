@@ -6,11 +6,8 @@
 #define VERSE3_GATE
 
 // DEPENDENCIES
-#include "game.h"
-#include "objects.h"
-#include "linmath.h"
+#include "MvRE.h"
 #include "multiverse.h"
-#include "render.h"
 
 #include <stdlib.h>
 #include <stdarg.h>

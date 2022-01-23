@@ -8,17 +8,15 @@
 unsigned int EMISSION_SHDR = 0;
 
 // VERSE
-static void buildVerse();
-static void cleanVerse();
+static void buildVerse(GLFWwindow* window);
+static void cleanVerse(GLFWwindow* window);
 
 VerseInstance MULTI_VERSE = {
     .Name = "Multi_verse",
 
     .Build = buildVerse,
     .Clean = cleanVerse,
-    .RenderStepped = NewSignal,
 
-    .Children = {NULL},
     .Jumps = {NULL}
 };
 
@@ -26,32 +24,13 @@ VerseInstance MULTI_VERSE = {
 // SOURCE
 // buildVerse
     // @brief Builds HOME_VERSE world
-static void buildVerse(VerseInstance* self, GLFWwindow* window) {
-    // EMISSION SHADER
-    GLuint emission_frag, emission_vert;
-    // Build
-    emission_vert = BuildShaderFromFile(GL_VERTEX_SHADER, "shdr/emission.vert"),
-    emission_frag = BuildShaderFromFile(GL_FRAGMENT_SHADER, "shdr/emission.frag");
-    EMISSION_SHDR = glCreateProgram();
-    glAttachShader(EMISSION_SHDR, emission_frag);
-    glAttachShader(EMISSION_SHDR, emission_vert);
-    glLinkProgram(EMISSION_SHDR);
-    // Cleanup
-    glDetachShader(EMISSION_SHDR, emission_frag);
-    glDetachShader(EMISSION_SHDR, emission_vert);
-    glDeleteShader(emission_frag);
-    glDeleteShader(emission_vert);
+static void buildVerse(GLFWwindow* window) {
+    SIMPLE_VERSE.Build(window);
 }
 
 
 // cleanVerse
     // @brief Cleans up HOME_VERSE
-static void cleanVerse(VerseInstance* self, GLFWwindow* window) {
-    SignalDestroy(&self->RenderStepped);
-    
-    for (int i=0; i<MAX_PART_INSTANCES; i++) {
-        if (self->Children[i]==NULL)
-            break;
-        self->Children[i] = DestroyPartInstance(self->Children[i]);
-    }
+static void cleanVerse(GLFWwindow* window) {
+    SIMPLE_VERSE.Clean(window);
 }

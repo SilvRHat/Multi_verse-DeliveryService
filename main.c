@@ -3,21 +3,14 @@
 
 // Main / Panel Source
 // DEPENDENCIES
-#include "game.h"       // Graphics / Globals
-#include "signal.h"     // Signals
-#include "camera.h"     // Camera
-#include "linmath.h"    // Vectors/ Matrices
-#include "render.h"     // Render world
-
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
+#include "main.h"
 
 
 SignalInstance  KeyInput = NewSignal,
                 MouseButtonInput = NewSignal,
                 ScrollInput = NewSignal,
-                CursorInput = NewSignal;
+                CursorInput = NewSignal,
+                FrameBufferSize = NewSignal;
 
 
 // SOURCE
@@ -33,7 +26,7 @@ static void MouseCallbackHandler(GLFWwindow* window, int button, int action, int
 
 
 static void ScrollCallbackHandler(GLFWwindow* window, double xoffset, double yoffset) {
-    // Call Static Hanlders
+    // Call Static Handlers
     cameraScrollInput(window, xoffset, yoffset);
     // Signal Dynamic Handlers
     SignalFire(&ScrollInput, window, xoffset, yoffset);
@@ -41,12 +34,17 @@ static void ScrollCallbackHandler(GLFWwindow* window, double xoffset, double yof
 
 
 static void CursorCallbackHandler(GLFWwindow* window, double xpos, double ypos) {
-    // Call Static Hanlders
+    // Call Static Handlers
     cameraCursorInput(window, xpos, ypos);
     // Signal Dynamic Handlers
     SignalFire(&CursorInput, window, xpos, ypos);
 }
 
+static void FrameBufferSizeCallback(GLFWwindow* window, int width, int height) {
+    // Call Static Handlers
+    // Signal Dynamic Handlers
+    SignalFire(&FrameBufferSize, window, width, height);
+}
 
 void gameLoop(GLFWwindow* window) {
     ErrCheck("ERRCHK IN: gameLoop()");
@@ -59,6 +57,7 @@ void gameLoop(GLFWwindow* window) {
     cameraStep(window, t, dt);
 
     // Render Scene
+    glClearColor(1,1,1,1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     renderStep(window, t, dt);
     
@@ -71,45 +70,6 @@ void gameLoop(GLFWwindow* window) {
 }
 
 
-// Error Functions
-// Credit to Willem A. (Vlakkies) Schreuder
-void Error(const char* format , ...) {
-   va_list args;
-   va_start(args,format);
-   printf("ERROR: ");
-   vfprintf(stderr,format,args);
-   va_end(args);
-   exit(EXIT_FAILURE);
-}
-
-
-void ErrCheck(const char* where) {
-   int err = glGetError();
-   char* desc = "No Error";
-   switch (err) {
-        case GL_NO_ERROR:
-            break;
-        case GL_INVALID_ENUM:
-            desc = "An unacceptable value is specified for an enumerated argument.";
-            break;
-        case GL_INVALID_VALUE:
-            desc = "A numeric argument is out of range.";
-            break;
-        case GL_INVALID_OPERATION:
-            desc = "The specified operation is not allowed in the current state.";
-            break;
-        case GL_INVALID_FRAMEBUFFER_OPERATION:
-            desc = "The framebuffer object is not complete.";
-            break;
-        case GL_OUT_OF_MEMORY:
-            desc = "There is not enough memory left to execute the command.";
-            break;
-        default:
-            desc = "Unknown Error";
-            break;
-   }
-   if (err) fprintf(stderr,"ERROR: %s \nFrom: (%s)\n",desc,where);
-}
 
 void glfwErrorHandler(int code, const char* desc) {
     printf("ERROR %d: %s\n", code, (desc!=NULL)? desc: "GLFW Encountered an issue");
@@ -121,6 +81,7 @@ void glfwErrorHandler(int code, const char* desc) {
 int main() {
     GLFWwindow* window;
     int windowX = 1080, windowY = 720;
+
 
     // Init
 #ifdef USEGLEW
@@ -152,22 +113,31 @@ int main() {
     glfwSetMouseButtonCallback(window, MouseCallbackHandler);
     glfwSetScrollCallback(window, ScrollCallbackHandler);
     glfwSetCursorPosCallback(window, CursorCallbackHandler);
+    glfwSetFramebufferSizeCallback(window, FrameBufferSizeCallback);
 
     // Controller Systems
     cameraInit(window); 
     renderInit(window);
+    SignalFire(&FrameBufferSize, window, windowX, windowY);
 
     // OpenGL
     glEnable(GL_DEPTH_TEST);
     glDepthFunc(GL_LESS);
 
-
     // Game Loop 
+    MULTI_VERSE.Build(window);
     while(!glfwWindowShouldClose(window)) {
         gameLoop(window);
     }
+    MULTI_VERSE.Clean(window);
 
     // Termination
+    SignalDestroy(&KeyInput);
+    SignalDestroy(&MouseButtonInput);
+    SignalDestroy(&ScrollInput);
+    SignalDestroy(&CursorInput);
+    SignalDestroy(&FrameBufferSize);
+    
     renderExit(window);
     glfwDestroyWindow(window);
     glfwTerminate();

@@ -7,10 +7,8 @@
 
 
 // DEPENDENCIES
-#include "linmath.h"
-#include "game.h"
-#include "camera.h"
-#include "objects.h"
+#include "MvRE.h"
+#include "multiverse.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -25,17 +23,10 @@
 
 
 // CLASSES
-struct JumpLens_s {
-    VerseInstance* Jump;
-    vec3 ViewPosition;
-};
-typedef struct JumpLens_s JumpLens;
-
 struct Camera_Instance_s {
     char* Name;
     mat4x4 CFrame, ViewCFrame;
     VerseInstance *HomeVerse, *ViewVerse;
-    JumpLens Lens[MAX_LENS];
     
     double Focus,   // Distance
            az,      // Azimuth Angle
@@ -49,8 +40,6 @@ void cameraInit(GLFWwindow* window);
 void cameraStep(GLFWwindow* window, double t, double step);
 void cameraCursorInput(GLFWwindow* window, double xpos, double ypos);
 void cameraScrollInput(GLFWwindow* window, double xoffset, double yoffset);
-void GetCameraHome(mat4x4 CFrame, VerseInstance** verse);
-void GetCameraView(mat4x4 CFrame, VerseInstance** verse);
 
 
 #endif

@@ -16,8 +16,7 @@ VerseInstance HOME_VERSE = {
     .Clean = cleanVerse,
     .RenderStepped = NewSignal,
 
-    .Children = {NULL},
-    .Jumps = {NULL},
+    
 };
 
 
@@ -57,6 +56,7 @@ static void buildVerse(VerseInstance* self, GLFWwindow* window) {
             }
         }
     }
+
 
 
     // Floor

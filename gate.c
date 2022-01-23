@@ -17,11 +17,10 @@ VerseInstance GATE_VERSE = {
     .Clean = cleanVerse,
     .RenderStepped = NewSignal,
 
-    .Children = {NULL},
     .Jumps = {NULL},
 };
 
-
+/*
 static void animateJumps() {
     double t = glfwGetTime();
 
@@ -654,4 +653,4 @@ static void cleanVerse(VerseInstance* self, GLFWwindow* window) {
             break;
         self->Children[i] = DestroyPartInstance(self->Children[i]);
     }
-}
+}*/

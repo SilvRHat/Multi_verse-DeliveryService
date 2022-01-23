@@ -1,8 +1,11 @@
-// Linear Algebra / Math Library
-// Sourced from GLFW
-	// https://github.com/glfw/glfw/blob/master/deps/linmath.h
+// LinearAlgebra_Maths
+// :Sourced from GLFW examples
+    // Original @ https://github.com/glfw/glfw/blob/master/deps/linmath.h
 
-// Minor Modifications made by Gavin Zimmerman
+// Modified by Gavin Zimmerman
+	// Includes naming changes
+	// Extra functions for constructing/ working w/ vectors
+	// Utility functions and constants
 
 
 #ifndef LINMATH_H
@@ -10,47 +13,91 @@
 
 #include <math.h>
 
-#ifdef _MSC_VER
+#ifndef _MSC_VER
 #define inline __inline
 #endif
 
 
-#define TO_RAD M_PI/180.0
-#define TO_DEG 180.0/M_PI
-#define clamp(v,min,max) \
-    ({\
-        __typeof__ (v) _v = (v);\
-        __typeof__ (min) _min = (min);\
-        __typeof__ (max) _max = (max);\
-        __typeof__ (v) _v1 = (_v > _min ? _v : _min);\
-        _v1 < _max ? _v1 : _max; \
-    })
-#define max(v,m) \
-({\
-	__typeof__ (v) _v = (v);\
-	__typeof__ (m) _m = (m);\
-	_v > _m ? _v : _m; \
-})
-#define min(v,m) \
-({\
-	__typeof__ (v) _v = (v);\
-	__typeof__ (m) _m = (m);\
-	_v < _m ? _v : _m; \
-})
+// CONSTANTS
+#define TO_RAD M_PI/180.f
+#define TO_DEG 180.f/M_PI
 
+// Euler Enums
+#define EULER_XXX 0
+#define EULER_XXY 1
+#define EULER_XXZ 2
+#define EULER_XYX 3
+#define EULER_XYY 4
+#define EULER_XYZ 5
+#define EULER_XZX 6
+#define EULER_XZY 7
+#define EULER_XZZ 8
+
+#define EULER_YXX 9
+#define EULER_YXY 10
+#define EULER_YXZ 11
+#define EULER_YYX 12
+#define EULER_YYY 13
+#define EULER_YYZ 14
+#define EULER_YZX 15
+#define EULER_YZY 16
+#define EULER_YZZ 17
+
+#define EULER_ZXX 18
+#define EULER_ZXY 19
+#define EULER_ZXZ 20
+#define EULER_ZYX 21
+#define EULER_ZYY 22
+#define EULER_ZYZ 23
+#define EULER_ZZX 24
+#define EULER_ZZY 25
+#define EULER_ZZZ 26
+
+
+//UTILITY FUNCTIONS
+#define min(v, m) \
+({ \
+    __typeof__ (v) _v = (v); __typeof__ (m) _m = (m); \
+    _v < _m ? _v : _m; \
+})
+#define max(v, m) \
+({ \
+    __typeof__ (v) _v = (v); __typeof__ (m) _m = (m); \
+    _v > _m ? _v : _m; \
+})
+#define clamp(v, mi, ma) \
+({ \
+    __typeof__ (v)  _v0 = (v); \
+    __typeof__ (mi) _mi = (mi); \
+    __typeof__ (ma) _ma = (ma); \
+	__typeof__ (v)  _v1 = min(_ma, _v0); \
+    max(_mi, _v1); \
+})
+#define lerp(t, a, b) ( a + t * (b - a) )
+
+
+
+// VECTORS
 #define LINMATH_H_DEFINE_VEC(n) \
 typedef float vec##n[n]; \
+typedef unsigned char color##n[n]; \
 static inline void vec##n##_zero(vec##n r) \
 { \
 	int i;\
 	for(i=0; i<n; ++i) \
 		r[i] = 0; \
 } \
-static inline void vec##n##_set(vec##n r, vec##n v) \
+static inline void vec##n##_set(vec##n r, float const k) \
 { \
-	int i;\
-	for(i=0; i<n; ++i) \
-		r[i] = v[i]; \
+    int i; \
+    for (i=0; i<n; ++i) \
+        r[i] = k; \
+} \
+static inline void vec##n##_dup(vec##n r, vec##n const v) \
+{ \
+    int i; \
+    for (i=0; i<n; ++i) \
+        r[i] = v[i]; \
 } \
 static inline void vec##n##_add(vec##n r, vec##n const a, vec##n const b) \
 { \
@@ -63,14 +110,20 @@ static inline void vec##n##_sub(vec##n r, vec##n const a, vec##n const b) \
 	int i; \
 	for(i=0; i<n; ++i) \
 		r[i] = a[i] - b[i]; \
-} \
+}  \
+static inline void vec##n##_comp_mul(vec##n r, vec##n const a, vec##n const b) \
+{ \
+	int i; \
+	for(i=0; i<n; ++i) \
+		r[i] = a[i] * b[i]; \
+}  \
 static inline void vec##n##_scale(vec##n r, vec##n const v, float const s) \
 { \
 	int i; \
 	for(i=0; i<n; ++i) \
 		r[i] = v[i] * s; \
 } \
-static inline float vec##n##_mul_inner(vec##n const a, vec##n const b) \
+static inline float vec##n##_dot(vec##n const a, vec##n const b) \
 { \
 	float p = 0.; \
 	int i; \
@@ -78,20 +131,29 @@ static inline float vec##n##_mul_inner(vec##n const a, vec##n const b) \
 		p += b[i]*a[i]; \
 	return p; \
 } \
-static inline float vec##n##_magnitude(vec##n const v) \
+static inline float vec##n##_length(vec##n const v) \
 { \
-	return (float) sqrt(vec##n##_mul_inner(v,v)); \
+	return (float) sqrt(vec##n##_dot(v,v)); \
 } \
 static inline void vec##n##_norm(vec##n r, vec##n const v) \
 { \
-	float k = 1.f / vec##n##_magnitude(v); \
+	float k = 1.f / vec##n##_length(v); \
 	vec##n##_scale(r, v, k); \
+} \
+static inline void vec##n##_from_col(vec##n r, color##n c) { \
+	for (int i=0; i<n; i++) \
+		r[i] = (float) c[i]/255.f; \
+} \
+static inline void col##n##_from_vec(color##n c, vec##n v) { \
+	for (int i=0; i<n; i++) \
+		c[i] = (unsigned char) (v[i]*255.f); \
 }
 
 LINMATH_H_DEFINE_VEC(2)
 LINMATH_H_DEFINE_VEC(3)
 LINMATH_H_DEFINE_VEC(4)
 
+// Vector constants
 #define VEC2_ZERO (vec2){0,0}
 #define VEC3_ZERO (vec3){0,0,0}
 #define VEC4_ZERO (vec4){0,0,0,0}
@@ -105,8 +167,14 @@ LINMATH_H_DEFINE_VEC(4)
 #define UNIT4_Z (vec4){0,0,1,0}
 #define UNIT4_W (vec4){0,0,0,1}
 
+#define RED (color4) {0xff,0,0,0}
+#define GREEN (color4) {0,0xff,0,0}
+#define BLUE (color4) {0,0,0xff,0}
+#define ALPHA (color4) {0,0,0,0xff}
 
-static inline void vec3_mul_cross(vec3 r, vec3 const a, vec3 const b)
+
+// Specialized functions
+static inline void vec3_cross(vec3 r, vec3 const a, vec3 const b)
 {
 	r[0] = a[1]*b[2] - a[2]*b[1];
 	r[1] = a[2]*b[0] - a[0]*b[2];
@@ -115,13 +183,13 @@ static inline void vec3_mul_cross(vec3 r, vec3 const a, vec3 const b)
 
 static inline void vec3_reflect(vec3 r, vec3 const v, vec3 const n)
 {
-	float p  = 2.f*vec3_mul_inner(v, n);
+	float p  = 2.f*vec3_dot(v, n);
 	int i;
 	for(i=0;i<3;++i)
 		r[i] = v[i] - p*n[i];
 }
 
-static inline void vec4_mul_cross(vec4 r, vec4 a, vec4 b)
+static inline void vec4_cross(vec4 r, vec4 const a, vec4 const b)
 {
 	r[0] = a[1]*b[2] - a[2]*b[1];
 	r[1] = a[2]*b[0] - a[0]*b[2];
@@ -129,79 +197,89 @@ static inline void vec4_mul_cross(vec4 r, vec4 a, vec4 b)
 	r[3] = 1.f;
 }
 
-static inline void vec4_reflect(vec4 r, vec4 v, vec4 n)
+static inline void vec4_reflect(vec4 r, vec4 const v, vec4 const n)
 {
-	float p  = 2.f*vec4_mul_inner(v, n);
+	float p  = 2.f*vec4_dot(v, n);
 	int i;
 	for(i=0;i<4;++i)
 		r[i] = v[i] - p*n[i];
 }
 
+
+
+// 4x4 MATRICES
 typedef vec4 mat4x4[4];
 static inline void mat4x4_identity(mat4x4 M)
 {
 	int i, j;
 	for(i=0; i<4; ++i)
 		for(j=0; j<4; ++j)
-			M[i][j] = i==j ? 1.f : 0.f;
+			M[i][j] = (float) i==j? 1.f : 0.f;
 }
-static inline void mat4x4_dup(mat4x4 M, mat4x4 N)
+static inline void mat4x4_dup(mat4x4 M, mat4x4 const N)
 {
-	int i, j;
+	int i;
 	for(i=0; i<4; ++i)
-		for(j=0; j<4; ++j)
-			M[i][j] = N[i][j];
+		vec4_dup(M[i], N[i]);
 }
-static inline void mat4x4_row(vec4 r, mat4x4 M, int i)
+static inline void mat4x4_row(vec4 r, mat4x4 const M, int const i)
 {
 	int k;
 	for(k=0; k<4; ++k)
 		r[k] = M[k][i];
 }
-static inline void mat4x4_col(vec4 r, mat4x4 M, int i)
+static inline void mat4x4_col(vec4 r, mat4x4 const M, int const i)
 {
 	int k;
 	for(k=0; k<4; ++k)
 		r[k] = M[i][k];
 }
-static inline void mat4x4_transpose(mat4x4 M, mat4x4 N)
+static inline void mat4x4_from_pos(mat4x4 R, vec3 const p)
 {
-	mat4x4 T;
+	mat4x4_identity(R);
+	vec3_dup(R[3], p);
+}
+static inline void mat4x4_from_vec3_cross(mat4x4 M, vec3 const a, vec3 const b)
+{
+	int i, j;
+	for(i=0; i<4; ++i) for(j=0; j<4; ++j)
+		M[i][j] = i<3 && j<3 ? a[i] * b[j] : 0.f;
+}
+static inline void mat4x4_transpose(mat4x4 M, mat4x4 const N)
+{
+	mat4x4 temp;
 	int i, j;
 	for(j=0; j<4; ++j)
 		for(i=0; i<4; ++i)
-			T[i][j] = N[j][i];
-	mat4x4_dup(M,T);
+			temp[i][j] = N[j][i];
+	mat4x4_dup(M, temp);
 }
-static inline void mat4x4_add(mat4x4 M, mat4x4 a, mat4x4 b)
+static inline void mat4x4_add(mat4x4 M, mat4x4 const a, mat4x4 const b)
 {
 	int i;
 	for(i=0; i<4; ++i)
 		vec4_add(M[i], a[i], b[i]);
 }
-static inline void mat4x4_sub(mat4x4 M, mat4x4 a, mat4x4 b)
+static inline void mat4x4_sub(mat4x4 M, mat4x4 const a, mat4x4 const b)
 {
 	int i;
 	for(i=0; i<4; ++i)
 		vec4_sub(M[i], a[i], b[i]);
 }
-static inline void mat4x4_scale(mat4x4 M, mat4x4 a, float k)
+static inline void mat4x4_scale(mat4x4 M, mat4x4 const a, float const k)
 {
 	int i;
 	for(i=0; i<4; ++i)
 		vec4_scale(M[i], a[i], k);
 }
-static inline void mat4x4_scale_aniso(mat4x4 M, mat4x4 a, float x, float y, float z)
+static inline void mat4x4_scale_aniso(mat4x4 M, mat4x4 const a, vec3 const k)
 {
-	int i;
-	vec4_scale(M[0], a[0], x);
-	vec4_scale(M[1], a[1], y);
-	vec4_scale(M[2], a[2], z);
-	for(i = 0; i < 4; ++i) {
-		M[3][i] = a[3][i];
-	}
+	vec4_scale(M[0], a[0], k[0]);
+	vec4_scale(M[1], a[1], k[1]);
+	vec4_scale(M[2], a[2], k[2]);
+	vec4_dup(M[3], a[3]);
 }
-static inline void mat4x4_mul(mat4x4 M, mat4x4 a, mat4x4 b)
+static inline void mat4x4_mul(mat4x4 M, mat4x4 const a, mat4x4 const b)
 {
 	mat4x4 temp;
 	int k, r, c;
@@ -212,7 +290,7 @@ static inline void mat4x4_mul(mat4x4 M, mat4x4 a, mat4x4 b)
 	}
 	mat4x4_dup(M, temp);
 }
-static inline void mat4x4_mul_vec4(vec4 r, mat4x4 M, vec4 v)
+static inline void mat4x4_mul_vec4(vec4 r, mat4x4 const M, vec4 const v)
 {
 	int i, j;
 	for(j=0; j<4; ++j) {
@@ -221,36 +299,15 @@ static inline void mat4x4_mul_vec4(vec4 r, mat4x4 M, vec4 v)
 			r[j] += M[i][j] * v[i];
 	}
 }
-static inline void mat4x4_translate(mat4x4 T, float x, float y, float z)
+static inline void mat4x4_translate_in_place(mat4x4 M, vec3 const v)
 {
-	mat4x4_identity(T);
-	T[3][0] = x;
-	T[3][1] = y;
-	T[3][2] = z;
-}
-// Reader Comment
-	// This will use local space
-static inline void mat4x4_translate_in_place(mat4x4 M, float x, float y, float z)
-{
-	vec4 t = {x, y, z, 0};
+	vec4 t = {v[0], v[1], v[2], 0};
 	vec4 r;
 	int i;
 	for (i = 0; i < 4; ++i) {
 		mat4x4_row(r, M, i);
-		M[3][i] += vec4_mul_inner(r, t);
+		M[3][i] += vec4_dot(r, t);
 	}
-}
-static inline void mat4x4_from_vec3_mul_outer(mat4x4 M, vec3 a, vec3 b)
-{
-	int i, j;
-	for(i=0; i<4; ++i) for(j=0; j<4; ++j)
-		M[i][j] = i<3 && j<3 ? a[i] * b[j] : 0.f;
-}
-static inline void mat4x4_from_rot(mat4x4 R, mat4x4 M)
-{
-	mat4x4_identity(R);
-	for (int i=0; i<2; i++)
-		mat4x4_col(R[i],M,i);
 }
 static inline void mat4x4_rotate(mat4x4 R, mat4x4 M, float x, float y, float z, float angle)
 {
@@ -258,11 +315,11 @@ static inline void mat4x4_rotate(mat4x4 R, mat4x4 M, float x, float y, float z, 
 	float c = cosf(angle);
 	vec3 u = {x, y, z};
 
-	if(vec3_magnitude(u) > 1e-4) {
+	if(vec3_length(u) > 1e-4) {
 		mat4x4 T, C, S = {{0}};
 
 		vec3_norm(u, u);
-		mat4x4_from_vec3_mul_outer(T, u, u);
+		mat4x4_from_vec3_cross(T, u, u);
 
 		S[1][2] =  u[0];
 		S[2][1] = -u[0];
@@ -323,6 +380,29 @@ static inline void mat4x4_rotate_Z(mat4x4 Q, mat4x4 M, float angle)
 	};
 	mat4x4_mul(Q, M, R);
 }
+static inline void mat4x4_from_euler(mat4x4 Q, vec3 const r, int const euler_order) {
+	mat4x4 temp;
+    mat4x4_identity(temp);
+
+    int order[3];
+    int x = euler_order;
+    order[0] = (x<=8)? 0 : ((x<=17)? 1 : 2);
+    x %= 9;
+    order[1] = (x<=2)? 0 : ((x<=5)? 1 : 2);
+    order[2] = x % 3;
+    
+    for (int i=0; i<3; i++) {
+        switch (order[i]) {
+            case 0: mat4x4_rotate_X(temp, temp, r[i]); break;
+            case 1: mat4x4_rotate_Y(temp, temp, r[i]); break;
+            case 2: mat4x4_rotate_Z(temp, temp, r[i]); break;
+        }
+    }
+    mat4x4_dup(Q, temp);
+}
+static inline void mat4x4_to_euler(vec3 e, mat4x4 const Q, int const order){
+	// TODO
+}
 static inline void mat4x4_invert(mat4x4 T, mat4x4 M)
 {
 	float idet;
@@ -375,17 +455,17 @@ static inline void mat4x4_orthonormalize(mat4x4 R, mat4x4 M)
 	mat4x4_dup(R, M);
 	vec3_norm(R[2], R[2]);
 
-	s = vec3_mul_inner(R[1], R[2]);
+	s = vec3_dot(R[1], R[2]);
 	vec3_scale(h, R[2], s);
 	vec3_sub(R[1], R[1], h);
 	vec3_norm(R[2], R[2]);
 
-	s = vec3_mul_inner(R[1], R[2]);
+	s = vec3_dot(R[1], R[2]);
 	vec3_scale(h, R[2], s);
 	vec3_sub(R[1], R[1], h);
 	vec3_norm(R[1], R[1]);
 
-	s = vec3_mul_inner(R[0], R[1]);
+	s = vec3_dot(R[0], R[1]);
 	vec3_scale(h, R[1], s);
 	vec3_sub(R[0], R[0], h);
 	vec3_norm(R[0], R[0]);
@@ -464,10 +544,10 @@ static inline void mat4x4_look_at(mat4x4 m, vec3 eye, vec3 center, vec3 up)
 	vec3_sub(f, center, eye);
 	vec3_norm(f, f);
 
-	vec3_mul_cross(s, f, up);
+	vec3_cross(s, f, up);
 	vec3_norm(s, s);
 
-	vec3_mul_cross(t, s, f);
+	vec3_cross(t, s, f);
 
 	m[0][0] =  s[0];
 	m[0][1] =  t[0];
@@ -489,7 +569,7 @@ static inline void mat4x4_look_at(mat4x4 m, vec3 eye, vec3 center, vec3 up)
 	m[3][2] =  0.f;
 	m[3][3] =  1.f;
 
-	mat4x4_translate_in_place(m, -eye[0], -eye[1], -eye[2]);
+	mat4x4_translate_in_place(m, (vec3){-eye[0], -eye[1], -eye[2]});
 }
 
 
@@ -514,12 +594,12 @@ static inline void quat_sub(quat r, quat a, quat b)
 static inline void quat_mul(quat r, quat p, quat q)
 {
 	vec3 w;
-	vec3_mul_cross(r, p, q);
+	vec3_cross(r, p, q);
 	vec3_scale(w, p, q[3]);
 	vec3_add(r, r, w);
 	vec3_scale(w, q, p[3]);
 	vec3_add(r, r, w);
-	r[3] = p[3]*q[3] - vec3_mul_inner(p, q);
+	r[3] = p[3]*q[3] - vec3_dot(p, q);
 }
 static inline void quat_scale(quat r, quat v, float s)
 {
@@ -561,10 +641,10 @@ v' = v + q.w * t + cross(q.xyz, t)
 	vec3 t = {q[0], q[1], q[2]};
 	vec3 u = {q[0], q[1], q[2]};
 
-	vec3_mul_cross(t, t, v);
+	vec3_cross(t, t, v);
 	vec3_scale(t, t, 2);
 
-	vec3_mul_cross(u, u, t);
+	vec3_cross(u, u, t);
 	vec3_scale(t, t, q[3]);
 
 	vec3_add(r, v, t);
@@ -642,31 +722,34 @@ static inline void quat_from_mat4x4(quat q, mat4x4 M)
 }
 
 
+
+
+// VECTOR UTILITY
 // Credit to StickMasterLuke
 // Translated from Lua
 // Sourced from: https://devforum.roblox.com/t/getting-the-point-of-intersection-on-a-plane/13625/2
 static inline void line_plane_intersection(vec3 r, vec4 line_point, vec4 line_direction, vec4 plane_point, vec4 plane_normal)
 {
-	float denominator = vec3_mul_inner(line_direction, plane_normal);
+	float denominator = vec3_dot(line_direction, plane_normal);
 	
 	if (denominator==0.f) {
-		vec3_set(r, line_point);
+		vec3_dup(r, line_point);
 		return;
 	}
 	
 	vec3 diff;
 	vec3_sub(diff, plane_point, line_point);
 	
-	float distance = vec3_mul_inner(diff, plane_normal) / denominator;
+	float distance = vec3_dot(diff, plane_normal) / denominator;
 	vec3_scale(r, line_direction, distance);
 	vec3_add(r,r, line_point);
 }
 
 static inline float line_plane_angle(vec3 line_direction, vec3 plane_normal)
 {
-	float denominator = vec3_magnitude(line_direction) * vec3_magnitude(plane_normal);
+	float denominator = vec3_length(line_direction) * vec3_length(plane_normal);
 	return (denominator!=0.f) ? 
-		asin(vec3_mul_inner(line_direction, plane_normal) / denominator) : 0.f;
+		asin(vec3_dot(line_direction, plane_normal) / denominator) : 0.f;
 }
 
 #endif

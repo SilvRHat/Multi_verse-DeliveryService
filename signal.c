@@ -1,17 +1,23 @@
-// Signal Code Pattern Library
+// Signal - Source
+// Programming pattern to provide easy calls on functions
 // Gavin Zimmerman
 
-// Allows dynamic function calls
-
-// Signal Source
 #include "signal.h"
 
 
-// SOURCE
-// SignalFire
-    // @brief Invokes all bound functions connected to signal
-    // @param s Signal to fire functions connect on
-    // @param ... Arguments to pass in as a va_list
+// SOURCE CODE
+// SignalInit - Initializes a signal to its default connections (none)
+    // @param s Signal to initialize
+void SignalInit(SignalInstance* s) {
+    s->_connections = 0;
+    for (int i=0; i<MAX_SIGNAL_CONNECTIONS; i++) {
+        s->_functions[i] = NULL;
+    }
+}
+
+// SignalFire - Prompts invokation on functions connected to signal
+    // @param s - Signal to fire functions connect on
+    // @param ... - Arguments to pass in as a va_list
 void SignalFire(SignalInstance *s, ...) {
     int i=0;
     va_list args;
@@ -22,13 +28,12 @@ void SignalFire(SignalInstance *s, ...) {
         va_end(args);
         i++;
     }
+    
 }
 
-// SignalConnect 
-    // @brief Binds a provided function to the signal
-    // @param s Signal to bind function with
-    // @param func Function to bind onto signal
-    // @return If connection was successful
+// SignalConnect - Connects a function to a signal
+    // @param s - Signal to bind function with
+    // @param func - Function to bind onto signal
 int SignalConnect(SignalInstance *s, void* func) {
     if (s->_connections+1==MAX_SIGNAL_CONNECTIONS)
         return -1;
@@ -38,11 +43,9 @@ int SignalConnect(SignalInstance *s, void* func) {
     return 0;
 }
 
-// SignalDisconnect
-    // @brief Unbinds a provided function from the signal if connected
-    // @param s Signal to disconnect function from
-    // @param func Function to disconnect
-    // @return If disconnection was successful
+// SignalDisconnect - Disconnects a function from the signal
+    // @param s - Signal to disconnect function from
+    // @param func - Function to disconnect
 int SignalDisconnect(SignalInstance *s, void* func) {
     for (int i=0; i<s->_connections; i++) {
         if (s->_functions[i]!=func) 
@@ -58,9 +61,8 @@ int SignalDisconnect(SignalInstance *s, void* func) {
     return -1;
 }
 
-// Signal Destroy
-    // @brief Unbinds all functions connected to the signal
-    // @param s Signal to clean contents of
+// Signal Destroy - Erases references to any connected functions
+    // @param s - Signal to clean contents of
 void SignalDestroy(SignalInstance *s) {
     for (int i=0; i<MAX_SIGNAL_CONNECTIONS; i++)
         s->_functions[i]=NULL;
@@ -68,7 +70,7 @@ void SignalDestroy(SignalInstance *s) {
 }
 
 
-// DOCUMENTATION
+
 // Test Program
 /*
 int foo(va_list args) { 
@@ -85,8 +87,11 @@ int bar(va_list args) {
     return 0;
 }
 
+
+
+
 int main() {
-    SignalInstance s;
+    struct signal s;
     int x=11, y=5;
 
     SignalConnect(&s, foo);

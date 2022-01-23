@@ -1,58 +1,67 @@
-# Multi_verse DeliveryService
-Developed by Gavin Zimmerman
-
-This is my submission for a final project in a Computer Graphics course taught at Univeristy of Colorado, Boulder by Willem A. (Vlakkies) Schreuder.
-
-My motivation for developing Mv-DS was to create a unique game based soley around graphics and various styles. My main inspiration for developing worlds of differing styles was from Spider-Man: Into the Spider-Verse. So I set out to develop a mail delivery robot that travels around the multi-verse delivering messages from worlds of every style.
+# Multi_verse:RE(Rendering Engine)
+Gavin Zimmerman
 
 
-
-## Dependencies
- - OpenGL 3.0+
- - GLFW 3.0+
- - MacOS X / Linux / Windows  Operating System
-    - Only tested on MacOS X/ Linux thus far
-
-## Running
-Running the program
-To compile, run: <code>make</code>
-To run program, run: <code>./final</code>
+## Multi_verse:RE //
+ Mv:RE is an engine for rendering multi-styled 3D scenes for games, animations, and 3D builds. The engine provides two core pieces: a set of structures for building such projects and a rendering pipeline for drawing them. 
 
 
-## Controls
-    Control                         Description
--   Scroll Wheel                    Zoom In/ Out
--   Right Mouse Button              Rotate Camera
--   RIGHT Mouse Button + SHIFT      Move Camera
--   Middle Mouse Button             Rotate Camera
--   Middle Mouse Button + SHIFT     Move Camera
--   WASD                            Move Camera
+## Multi_verse Rendering //
+ This method of 3D creating is inspired from Spider-Man: Into the Spider-Verse, which embraces the collaboration of multiple styles together. Mv:RE also embraces this collaboration. The following outlines core technologies in graphics and expands on their use in Mv:RE for rendering multi-styled scenes.
 
 
-## Status
-Developing this game has been beyond fun- but its nowhere near done and I can't wait to get it there over winter break. And getting to the project submission deadline I also think my exisiting codebase makes for a great submission. So enjoy reading about the crazy stuff I made below!
+### Forward-Rendering //
+ Forward rendering is a common technique for rendering scenes with multiple/arbitrary light sources, by rendering the objects for each light that affecting it and performing an additive blend on the resulting color. This technique can easily become expensive in heavily-lighted scenes as opposed to other techniques like deferred rendering. The tradeoff here is freedom in shading and is more typical in an animation/mobile game context.
+
+### Shaders //
+ Shaders are graphics programs, used for lighting, procedural textures, and many other special purposes. They require state-change which is expensive in the context of graphics, and are often standardized/ grouped by custom material in games for run-time efficiency. 
+
+### Lights //
+ In the context of forward-rendering, lights are essentially a rendering pass adding new information into the color buffer through additive blending. Note that this does not translate to one draw call, it simply means any affected parts get rendered under it.
+
+### In the context of Mv:RE //
+ - Light Layering - Light instances are provided a property that determines its priority in rendering
+ - Light Blending - Lights may customize the blending functions / constants
+ - FBO/Light Chaining - Post-processing often involves an initial render to a texture which is read on a secondary pass. Chaining the results of previous passes allows shading processes to be split between multiple passes. For unified calculations like lighting followed by seperate calculations like procedural texturing
+ - Noding - Shaders are used for similar tasks, but often differ by parts/materials. These parts are allowed multiple shaders for those similar tasks allowing 2 parts to be shaded differently by the same light
+ - Light OverShading - Lights can also opt to shade every part using the same fragment shader (overwriting the shader stages provided by the part)
+ - Light Groups - Specifies which parts get affected by which lights; each part by default registers to a global light group to render without lights, but can unregister for unique effects
+
+### Art considerations //
+ While it can be easy to combine art styles, it can be very difficult to unify them. Think of your project as a team of differening visuals - you want these visuals to work together rather than clash/ fight. 
+
+ Thus when combining art styles establish similarities which will unify them. Having cohesion on some element will enforce the feeling of a shared source in your creations.
+
+ Similarly, you want to establish differences which make them unique. Here you want to contrast some element between the two styles which compliment each other. Be careful in establishing this contrast, since not all differences compliment each other the same.
+
+ Some elements to think of include: color scheme, shapes/ objects, projection mode, lighting, animation, frame-rate, etc.
 
 
-## Check these parts out:
-- Portal implementation: This was a main feature I had described in my proposal and is one of the most involved pieces in my code.
-    - Portals are tracked by a 'JumpInstance' which holds two homogenous coordinates which I call CFrames (coordinate frames). Defined in [objects.h 84:0].
-    - When JumpSetCFrames() is called, the two CFrames are set along with pre-computed translation CFrames (_ToV0, _ToV1). [objects.c 748:0]. These matrices allow the origin of an external scene (with its own coordinate system) to be treated as an offset. 
-    - Rendering with portals is a two step process. The first step is gathering what scenes should be rendered and at what offset. [render.c 123:0 to 221:0]. We actually need these in order of depth to properly render, so we step through each scene and populate a 'RenderStack' until it is full.
-        - For performance, I implemented a portal-culling technique that will only render external scenes if they are visible through all the portals taken to get there. To test this, I keep track of a bounding box in NDC coordinates. [render.c 175:0]. I've provided a video of this specific implementation in the /doc folder.
-    - The second step of rendering portals involves using the stencil buffer. First, the farthest scene needs to be rendered so that the closer scenes don't populate it with objects. 
-        - Because of this behaviour, we need to use GL_INCR in the glStencilOp to ensure that the individual pixel is visible through all portals.
-        - After setting the stencil buffer and rendering the external scene (with clipping), a z-depth-only pass on the individual portal shields closer scenes from writing into that space.
-    - Sadly, you cannot go through portals yet due to difficulty in how the camera controller is setup (using angles which requires euler angle calculations from homogenous coordinates). The method of crossing through a portal with a third person camera also comes with many occlusion problems - not to say I don't already have a method of combatting them.
-
-- Signal-based programming: This adheres to the event-programming model discussed in lecture 2- and allows for easy animation. Every time the scene is rendered, it fires a signal that calls back any connected functions. I use this to animate my scene.
-
-- Various objects drawn with triangle primitives: I've drawn many of the simple objects in VBOs often using triangle-strips to reduce vertices. Certain objects (such as spheres) allow specification on the number of vertices; which I've standarized allowing for VBO reuse in addition to custom generation of objects. This allows for the design of complex scenes from simple building blocks. I've also built a function for building arcs out of any part.
+## Dependencies //
+ - OpenGL 4.1+
+ - glfw3
+ - MacOS X / Linux
+ - gcc
 
 
+## Files //
+ - README
+    - Foreword on Mv:RE
+ - MvRE.h
+    - Multi_verse:RE Header / Sources dependencies
+ - graphics.h
+    - Graphics dependencies
+ - linmath.h
+    - Linear Algebra math library
+ - signal.h / signal.c
+    - Signal instance for dynamic event-programming
+ - utils.h / utils.c
+    - Additional utility functions including sorting
+ - objects.h / objects.c
+    - Multi_verse:RE Instances and packaged rendering objects
+ - render.h / render.c
+    - Multi_verse:RE Rendering Pipeline
 
 
-### OpenGL 4.0
-My project uses the OpenGL 3+ Syntax/ Core Profile - in which many of the OpenGL 2.0 concepts we've learned in class have been deprecated. I though to provide some insight and reasoning on why I pursued this path, because it did take a lot of time for the setup of basic elements.
- - Did I really need OpenGL 4.0 for my project? No. OpenGL 2.0/ Fixed pipeline is incredibly versatile on its own and I have no doubt that I would have been able to accomplish a lot without OpenGL 3+.
- - So why? Well, I really I wanted to get into the low level pieces and get a deep understanding of many graphics concepts beyond whats taught in class. And I did! I learned how I should use VAOs/ VBOS, how they differ, the internal mechanics of shaders, how to use transformation matrices for everything, and a lot more.
- - [UPDATED] What I gained? I especially plan on utilizing the instancing versions for drawing objects so as to reduce CPU/GPU communication bottlenecks. And I plan on using geometry shaders for various effects on character and on environment such as rendering lines to showcase wind. Many of my objects are built with the same shader and VBO, thus instancing is very suitable for larger development.
+## License //
+ This engine is Open Source and uses a GPL License, similar to Blender. 

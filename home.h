@@ -6,9 +6,7 @@
 #define VERSE0_HOME
 
 // DEPENDENCIES
-#include "game.h"
-#include "objects.h"
-#include "linmath.h"
+#include "MvRE.h"
 #include "multiverse.h"
 
 #include <stdlib.h>

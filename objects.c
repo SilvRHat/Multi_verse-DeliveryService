@@ -1,101 +1,181 @@
-// Multi_verse DeliveryService
+// Multi_verse: RE(Rendering Engine)
 // Gavin Zimmerman
 
-// Objects Source
+// Mv:RE Objects Source
+// Provides instances for rendering Multi_verse scenes
 #include "objects.h"
 
 
+
+// STATIC DECLARATIONS
+static void _OriginDefault(OriginInstance* o);
+static int _OriginAddPart(OriginInstance* o, PartInstance* p);
+static int _OriginRemovePart(OriginInstance* o, PartInstance* p);
+static int _OriginAddLight(OriginInstance* o, LightInstance* l);
+static int _OriginRemoveLight(OriginInstance* o, LightInstance* l);
+static int _OriginAddOrigin(OriginInstance* o, OriginInstance* l);
+static int _OriginRemoveOrigin(OriginInstance* o, OriginInstance* l);
+
+static int _VerseAddJump(VerseInstance* v, JumpInstance* j);
+static int _VerseRemoveJump(VerseInstance* v, JumpInstance* j);
+
+static void _PrintShaderLog(GLuint shader, char* filename);
+static void _PrintProgramLog(GLuint prog);
+
+
+
 // SOURCE
-// Drawing Functions
-static void drawFromTriFan(PartInstance* p) {
-    glDrawArrays(GL_TRIANGLE_FAN, 0, p->Vertices);
-}
-static void drawFromTriStrip(PartInstance* p) {
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, p->Vertices);
-}
-static void drawCubeFromTriStrip(PartInstance* p) {
-    for (int i=0; i<6; i++)
-        glDrawArrays(GL_TRIANGLE_STRIP, i*4, 4);
-}
-static void drawUVSphereFromTriStrip(PartInstance* p) {
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, p->Vertices);
-}
-static void drawCylinder(PartInstance* p) {
-    int sides = (p->Triangles/4);
-    glDrawArrays(GL_TRIANGLE_FAN, 0, sides+2);
-    glDrawArrays(GL_TRIANGLE_FAN, sides+2, sides+2);
-    glDrawArrays(GL_TRIANGLE_STRIP, 2*(sides+2), 2*(sides+1));
-}
-static void drawCone(PartInstance* p) {
-    int sides = p->Triangles / 3;
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 2*(sides+1));
-    glDrawArrays(GL_TRIANGLE_FAN, 2*(sides+1), sides+2);
-}
-static void drawFrustumCone(PartInstance* p) {
-    int sides = p->Triangles / 4;
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, 2*(sides+1));
-    glDrawArrays(GL_TRIANGLE_FAN, 2*(sides+1), sides+2);
-    glDrawArrays(GL_TRIANGLE_FAN, 2*(sides+1) + sides+2, sides+2);
-}
-static void drawFromLineStrip(PartInstance* p) {
-    glEnable(GL_LINE_SMOOTH);
-    glDrawArrays(GL_LINE_STRIP, 0, p->Vertices);
-}
+// ////////////////////////////////////////////
 
 // buildVAOVBO
     // @brief Helper function for setting up a VAO/VBO pair (unique per vertice set)
-    // @param vao Address of VAO variable to set
-    // @param vbo Address of VBO variable to set
-    // @param verts Array of geometery data
-    // @param size of geometery data array
-static void buildVAOVBO(unsigned int* vao, unsigned int *vbo, float verts[], int n) {
-    glGenVertexArrays(1, vao);
-    glBindVertexArray(*vao);
+    // @param vao_ptr Address of VAO variable to set
+    // @param vbo_ptr Address of VBO variable to set
+    // @param vertex_data Array of geometery data
+    // @param n of geometery data array
+void buildVAOVBO(GLuint* vao_ptr, GLuint *vbo_ptr, float vertex_data[], int n) {
+    // Create Buffer
+    glGenVertexArrays(1, vao_ptr);
+    glBindVertexArray(*vao_ptr);
 
-    glGenBuffers(1, vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, *vbo);
-    glBufferData(GL_ARRAY_BUFFER, n, verts, GL_STATIC_DRAW);
+    glGenBuffers(1, vbo_ptr);
+    glBindBuffer(GL_ARRAY_BUFFER, *vbo_ptr);
+    glBufferData(GL_ARRAY_BUFFER, n, vertex_data, GL_STATIC_DRAW);
 
-    glVertexAttribPointer(ATTRIB_POS_VERTEX, 4, GL_FLOAT, GL_FALSE, VERTEX_DATA_ROW*sizeof(GL_FLOAT), (void*) 0);
+
+    // Per-vertex Attributes
+    // Vertex
+    glVertexAttribPointer(ATTRIB_POS_VERTEX, 4, GL_FLOAT, GL_FALSE, VERT_ATTRIB_ROW*sizeof(GL_FLOAT), (void*) 0);
     glEnableVertexAttribArray(ATTRIB_POS_VERTEX);
-    glVertexAttribPointer(ATTRIB_POS_NORMAL, 3, GL_FLOAT, GL_FALSE, VERTEX_DATA_ROW*sizeof(GL_FLOAT), (void*) 4);
+    // Normal
+    glVertexAttribPointer(ATTRIB_POS_NORMAL, 3, GL_FLOAT, GL_FALSE, VERT_ATTRIB_ROW*sizeof(GL_FLOAT), (void*) (4*sizeof(float)));
     glEnableVertexAttribArray(ATTRIB_POS_NORMAL);
+    // UV Map
+    glVertexAttribPointer(ATTRIB_POS_UV_MAP, 2, GL_FLOAT, GL_FALSE, VERT_ATTRIB_ROW*sizeof(GL_FLOAT), (void*) (7*sizeof(float)));
+    glEnableVertexAttribArray(ATTRIB_POS_UV_MAP);
+
+    
+    // Per-instance Attributes
+    glBindBuffer(GL_ARRAY_BUFFER, getInstancedAttribVBO());
+    // ModelViewMatrix
+    for (int i=0; i<4; i++) {
+        glEnableVertexAttribArray(ATTRIB_POS_MODELVIEW+i);
+        glVertexAttribPointer(ATTRIB_POS_MODELVIEW+i, 4, GL_FLOAT, GL_FALSE, INST_ATTRIB_ROW*sizeof(GL_FLOAT), (void*) 0 + (i*sizeof(vec4)));
+        glVertexAttribDivisor(ATTRIB_POS_MODELVIEW+i, 1);
+    }
+    // Normal Matrix
+    for (int i=0; i<3; i++) {
+        glVertexAttribPointer(ATTRIB_POS_NORMALMAT+i, 3, GL_FLOAT, GL_FALSE, INST_ATTRIB_ROW*sizeof(GL_FLOAT), (void*) 0 + ((16 + (i*3))*sizeof(float)));
+        glEnableVertexAttribArray(ATTRIB_POS_NORMALMAT+i);
+        glVertexAttribDivisor(ATTRIB_POS_NORMALMAT+i, 1);
+    }
+    // Color
+    glVertexAttribPointer(ATTRIB_POS_COLOR, 4, GL_FLOAT, GL_FALSE, INST_ATTRIB_ROW*sizeof(GL_FLOAT), (void*) 0 + (25*sizeof(float)));
+    glVertexAttribDivisor(ATTRIB_POS_COLOR, 1);
+    glEnableVertexAttribArray(ATTRIB_POS_COLOR);
+    // Size
+    glVertexAttribPointer(ATTRIB_POS_SIZE, 3, GL_FLOAT, GL_FALSE, INST_ATTRIB_ROW*sizeof(GL_FLOAT), (void*) 0 + (29*sizeof(float)));
+    glVertexAttribDivisor(ATTRIB_POS_SIZE, 1);
+    glEnableVertexAttribArray(ATTRIB_POS_SIZE);
+    // Node Attrib ins
+    for (int i=0; i<4; i++) {
+        glEnableVertexAttribArray(ATTRIB_POS_NODE+i);
+        glVertexAttribPointer(ATTRIB_POS_NODE+i, 4, GL_FLOAT, GL_FALSE, INST_ATTRIB_ROW*sizeof(GL_FLOAT), (void*) 0 + ((32 + (i*4))*sizeof(float)));
+        glVertexAttribDivisor(ATTRIB_POS_NODE+i, 1);
+    }
+    
+    // Release VAO / VBO
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+}
+
+GLuint getUniqueLightGroup() {
+    static GLuint lg = GLOBAL_LIGHTGROUP;
+    lg++;
+    return lg;
+}
+
+GLuint getInstancedAttribVBO() {
+    float attribbuff[INST_ATTRIB_ROW * INST_ATTRIB_COL] = {0};
+    static GLuint vbo = 0;
+    static int init = 0;
+    
+    if (!init) {
+        init=1;
+        // Generate Buffer
+        glGenBuffers(1, &vbo);
+        // Allocate space
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(attribbuff), attribbuff, GL_STREAM_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+    }
+    return vbo;
 }
 
 
 
-// Part Functions
-// Generic Constructor
+
+
+
+
+
+
+// GAME INSTANCES
+// ////////////////////////////////////////////
+
+// PART INSTANCE
+// Generic Constructor/Deconstructor
+
+// NewPartInstance
     // @brief Creates a PartInstance object using malloc. 
     // All instance properties are set to their defaults.
     // @return Returns the created PartInstance
 PartInstance* NewPartInstance() {
     PartInstance* p = (PartInstance*) malloc(sizeof(PartInstance));
-    
-    p->Name="";
-    p->ClassName="";
-    mat4x4_identity(p->CFrame);
-    vec3_zero(p->Size);
-    vec3_zero(p->Position);
-    vec3_zero(p->Rotation);
-    vec3_zero(p->Pivot);
+    // Book Keeping
+    p->Name="Part";
+    p->ClassName="BasePart";
+    p->Parent = NULL;
+    p->CanRender = GL_TRUE;
 
+    // Positional & Scaling
+    vec3_set(p->Size, 1.f);
+    vec3_zero(p->Pivot);
+    mat4x4_identity(p->CFrame);
+
+    // Shader stages (dubbed Nodes)
+    for (int i=0; i<3; i++) {
+        p->VertNodes[i] = 0;
+        p->FragNodes[i] = 0;
+        for (int j=0; j<4; j++) vec4_dup(p->NodeAttribs[i][j], UNIT4_W);
+    }
+    p->VertNodes[ENUM_NODE_LIGHT] = simpleVertNode() ;
+    p->FragNodes[ENUM_NODE_LIGHT] = simpleFragNode();
+    PartSetNodeAttribByName(p, ENUM_NODE_LIGHT, "n_EmissionColor", (vec4){0,0,0,1});
+    PartSetNodeAttribByName(p, ENUM_NODE_LIGHT, "n_SpecularColor", (vec4){.6,0.6,0.6,1});
+    PartSetNodeAttribByName(p, ENUM_NODE_LIGHT, "n_Shiny", (vec4){2, 0,0,0});
+    PartSetNodeAttribByName(p, ENUM_NODE_LIGHT, "n_Emission", (vec4){0, 0,0,0});
+    
+    // Textures
+    vec4_set(p->Color, 1.f);
+    p->Texture = 0;
+    for (int i=0; i<MAX_LIGHTGROUPS; i++) p->LightGroups[i] = 0;
+    PartAddLightGroup(p, GLOBAL_LIGHTGROUP);
+
+    // Vertex Data
     p->Vao = 0;
     p->Vbo = 0;
-    p->Triangles =0;
-    p->Vertices = 0;
+    p->Vertices  = 0;
+    p->DrawMode = GL_LINE_STRIP;
+    p->VboReused = GL_TRUE;
 
-    for (int i=0; i<3; i++) 
-        p->Color[i]=255;
-    p->Transparency=1;
-    p->Shader = 0;
-
+    // Internal
+    p->_Malloced = GL_TRUE;
     return p;
 }
 
-
-// Buffer Deconstructor
-    // @brief Will delete the VAO/VBO buffer/array assosiated with an object
+// DeletePartInstanceBuffers
+    // @brief Deletes the VAO/VBO assosiated with a part instance if it exists.
     // @return Returns NULL
 void* DeletePartInstanceBuffers(PartInstance* p) {
     if (glIsBuffer(p->Vbo))
@@ -104,78 +184,113 @@ void* DeletePartInstanceBuffers(PartInstance* p) {
         glDeleteVertexArrays(1, &p->Vao);
     p->Vbo = 0;
     p->Vao = 0;
+    p->VboReused = GL_TRUE;
 
     return NULL;
 }
 
-// Generic Deconstructor 
+// DestroyPartInstance
     // @brief Will free Part Instance from memory. This should only be called once per part instance.
     // @return Returns NULL
 void* DestroyPartInstance(PartInstance* p) {
-    free(p);
+    // Disconnect references
+    PartSetParent(p, NULL);
+    if (p->_Malloced) {
+        p->_Malloced = GL_FALSE;
+        free(p);
+    }
     return NULL;
 }
 
 
-// Instance Constructors
-// Line
-    // @brief Contructs a part instance for rendering a line from 3D vector data
+// Primitive Object constructors
+// point
+    // @brief Creates a point
+    // @param pt The location of the point
+    // @return Just a point :)
+PartInstance* point(vec4 pt) {
+    static GLuint vao, vbo;
+    static int init = 0;
+
+    if (!init) {
+        init = 1;
+        float vert_data[] = {0,0,0,1,  0,0,0,  0,0};
+        buildVAOVBO(&vao, &vbo, vert_data, sizeof(VERT_ATTRIB_ROW));
+    }
+
+    PartInstance* p = NewPartInstance();
+    p->ClassName = "PointPart";
+    PartSetPosition(p, pt);
+    p->Vao = vao;
+    p->Vbo = vbo;
+    p->Vertices = 1;
+    p->DrawMode = GL_POINTS;
+    p->VboReused = GL_TRUE;
+    
+    return p;
+}
+
+// primitive
+    // @brief Vaguely construct any object from the data and primitive passed in.
+    // ALWAYS creates a new VAO/VBO pair.
     // @param n Number of points in line
     // @pts Array of vec4 3d positions
-    // @return Part Instance for drawing line
-PartInstance* line(int n, vec4 pts[]) {
-    // Build vertice data
-    unsigned int vao, vbo;
-    float verts[VERTEX_DATA_ROW * n];
+    // @return Primitive Instance
+PartInstance* primitive(int n, vec4 pts[], vec3 norms[], vec2 uvs[], GLenum DrawType) {
+    // Build vertex data
+    GLuint vao, vbo;
+    float verts[VERT_ATTRIB_ROW * n];
     {
         for (int i=0; i<n; i++) {
-            int off = i * VERTEX_DATA_ROW;
-            vec4_set((float*) (verts+off), pts[i]);             // Position
-            vec3_set((float*) (verts+off+4), (vec4){0,0,1});    // Normal
+            int off = i * VERT_ATTRIB_ROW;
+            vec4_dup((float*) (verts+off), pts[i]);     // Position
+            vec3_dup((float*) (verts+off+4), norms[i]); // Normal
+            vec2_dup((float*) (verts+off+7), uvs[i]);   // UV Map
         }
     }
     buildVAOVBO(&vao, &vbo, verts, sizeof(verts));
     
-    // Create Instance
     PartInstance* p = NewPartInstance();
-    p->Draw = drawFromLineStrip;
-    p->Vertices = n;
+    p->ClassName = "PrimitivePart";
     p->Vao = vao;
     p->Vbo = vbo;
-    vec3_set(p->Size, (vec3){1,1,1});
-    p->ClassName = "Line";
+    p->Vertices = n;
+    p->DrawMode = DrawType;
+    p->VboReused = GL_FALSE;
+
     return p;
 }
 
-// Plane
-    // @brief Contructs a part instance for rendering a plane
-    // @param size x/z sizing of plane
-    // @return Part Instance for drawing plane
-PartInstance* plane(double size) {
-    static unsigned int vao = 0, vbo = 0;
+// canvas
+    // @brief Contructs a part instance for rendering a plane/ canvas. 
+    // Named canvas for its intended-usage as displaying images
+    // @param size x/z sizing of canvas
+    // @return Canvas Instance
+PartInstance* canvas(float size) {
+    static GLuint vao = 0, vbo = 0;
     static int init = 0;
 
     if (!init) {
         init=1;
         float s=.5;
         float verts[] = {
-             s, 0, s, 1, 0, 1, 0,
-            -s, 0, s, 1, 0, 1, 0,
-             s, 0,-s, 1, 0, 1, 0,
-            -s, 0,-s, 1, 0, 1, 0,
+             s, s, 0, 1,   0, 0, 1,   1, 1,
+             s,-s, 0, 1,   0, 0, 1,   0, 1,
+            -s, s, 0, 1,   0, 0, 1,   1, 0,
+            -s,-s, 0, 1,   0, 0, 1,   0, 0
         };
         buildVAOVBO(&vao, &vbo, verts, sizeof(verts));
     }
-
-    // Create Instance
+    
     PartInstance* p = NewPartInstance();
-    p->Draw = drawFromTriStrip;
-    p->Vertices = 4;
-    p->Triangles = 2;
+    p->ClassName = "CanvasPart";
+    PartSetSize(p, (vec3){size, size, 0});
     p->Vao = vao;
     p->Vbo = vbo;
-    vec3_set(p->Size, (vec3){size,0,size});
-    p->ClassName = "Plane";
+    p->Vertices = 4;
+    p->DrawMode = GL_TRIANGLE_STRIP;
+    p->VboReused = GL_TRUE;
+
     return p;
 }
 
@@ -184,21 +299,21 @@ PartInstance* plane(double size) {
     // @param sides Number of sides to render on circle; inputs are standardized to reduce unique vaos/vbos
     // @param radius Radius of circle
     // @return Part Instance for drawing circle
-PartInstance* circle(int sides, double radius) {
-    static unsigned int vao[5] = {0}, vbo[5] = {0};
-    unsigned int cvao = 0, cvbo = 0, *evao, *evbo;
-    if (sides<=2)
-        return NULL;
+PartInstance* circle(int sides, float radius) {
+    static GLuint vao[6] = {0}, vbo[6] = {0};
+    GLuint cvao = 0, cvbo = 0, *evao, *evbo;
+    if (sides<=2) return NULL;
     
     // Set effective vao/ vbo int address to use
     int mem;
     switch(sides) {
-        case INST_XLO_SEGMTS:   mem=0; break;   // Standard Params
-        case INST_LOW_SEGMTS:   mem=1; break;
-        case INST_MED_SEGMTS:   mem=2; break;
-        case INST_HI_SEGMTS:    mem=3; break;
-        case INST_XHI_SEGMTS:   mem=4; break;
-        default:                mem=-1; break;  // Custom Params
+        case XLO_DETAIL:    mem= 0; break;  // Standard Params
+        case LO_DETAIL:     mem= 1; break;
+        case MED_DETAIL:    mem= 2; break;
+        case HI_DETAIL:     mem= 3; break;
+        case XHI_DETAIL:    mem= 4; break;
+        case XXHI_DETAIL:   mem= 5; break;
+        default:            mem=-1; break;  // Custom Params
     }
     if (mem==-1) {
         evao = &cvao; evbo = &cvbo;
@@ -210,19 +325,22 @@ PartInstance* circle(int sides, double radius) {
     // If not initialized or custom params, build vertice data from new
     if ((*evao==0) || (*evbo==0)) {
         float s = .5;
-        float verts[VERTEX_DATA_ROW * (sides+2)];
+        float verts[VERT_ATTRIB_ROW * (sides+2)];
         {
             // Triangle Fan
             int off=0;
-            vec4_set((float*) verts, UNIT4_W);              // Position
-            vec3_set((float*) (verts+4), UNIT3_Y);  // Normal
+            vec4_dup((float*) (verts+0), UNIT4_W);          // Position
+            vec3_dup((float*) (verts+4), UNIT3_Z);          // Normal
+            vec2_dup((float*) (verts+7), (vec2){.5, .5});   // UV Map     
+
             for (int i=1; i<sides+2; i++) {
                 double a = (float)i * 360.f / (float)sides; // Angle
-                vec4 pos = {s*cosf(a*TO_RAD), 0.f, s*sinf(a*TO_RAD), 1.f};
+                vec4 pos = {s*sinf(a*TO_RAD), s*cosf(a*TO_RAD), 0.f, 1.f};
                 
-                off = i * VERTEX_DATA_ROW;
-                vec4_set((float*) (verts+off), pos);        // Set Position
-                vec3_set((float*) (verts+off+4), UNIT3_Y);  // Set Normal
+                off = i * VERT_ATTRIB_ROW;
+                vec4_dup((float*) (verts+off+0), pos);          // Position
+                vec3_dup((float*) (verts+off+4), UNIT3_Z);          // Normal
+                vec2_dup((float*) (verts+off+7), (vec2){.5+pos[0], .5+pos[1]});   // UV Map 
             }
         }
         buildVAOVBO(evao, evbo, verts, sizeof(verts));
@@ -230,13 +348,13 @@ PartInstance* circle(int sides, double radius) {
 
     // Create Instance
     PartInstance* p = NewPartInstance();
-    p->Draw = drawFromTriFan;
-    p->Vertices = sides+2;
-    p->Triangles = sides;
+    p->ClassName = "CirclePart";
+    PartSetSize(p, (vec3){radius*2, radius*2, 0});
     p->Vao = *evao;
     p->Vbo = *evbo;
-    vec3_set(p->Size, (vec3){radius*2, 0, radius*2});
-    p->ClassName = "Circle";
+    p->Vertices = sides+2;
+    p->DrawMode = GL_TRIANGLE_FAN;
+    p->VboReused = (mem==-1)? GL_FALSE : GL_TRUE;
     return p;
 }
 
@@ -244,7 +362,7 @@ PartInstance* circle(int sides, double radius) {
     // @brief Contructs a part instance for rendering a cube
     // @param size x/y/z sizing of cube
     // @return Part Instance for drawing cube
-PartInstance* cube(double size) {
+PartInstance* cube(float size) {
     static unsigned int vao = 0, vbo = 0;
     static int init = 0;
 
@@ -252,25 +370,37 @@ PartInstance* cube(double size) {
     if (!init) {
         init = 1;
         // Generate cube
-        float verts[VERTEX_DATA_ROW * 24];
+        float verts[VERT_ATTRIB_ROW * 36];
         {
             float s = .5;
             mat4x4 front_verts[4];
-            mat4x4_translate(front_verts[0], s, s, s); mat4x4_translate(front_verts[1], s,-s, s);
-            mat4x4_translate(front_verts[2],-s, s, s); mat4x4_translate(front_verts[3],-s,-s, s);
+            mat4x4_from_pos(front_verts[0], (vec3){ s, s, s});
+            mat4x4_from_pos(front_verts[1], (vec3){ s,-s, s});
+            mat4x4_from_pos(front_verts[2], (vec3){-s, s, s});
+            mat4x4_from_pos(front_verts[3], (vec3){-s,-s, s}); 
+            vec2 UVe[4] = {{0,0},{0,1},{1,0},{1,1}};
+            vec2 UVo[4] = {{1,1},{1,0},{0,1},{0,0}};
+
             // Rotate around sides
-            for (int i=0; i<6; i++) {
+            for (int f=0; f<6; f++) {
                 mat4x4 rot, tri;
                 mat4x4_identity(rot);
-                if (i<4) // Front, Back, Left, Right Rotations
-                    mat4x4_rotate_X(rot, rot, 90*i*TO_RAD);
+                if (f<4) // Front, Back, Left, Right Rotations
+                    mat4x4_rotate_X(rot, rot, 90*f*TO_RAD);
                 else // Top & Bottom
-                    mat4x4_rotate_Y(rot, rot, 90*TO_RAD * (i==5?-1:1));
-                for (int v=0; v<4; v++) {
-                    int off = ((i*4)+v) * VERTEX_DATA_ROW;
-                    mat4x4_mul(tri, rot, front_verts[v]); // Rotate front face
-                    mat4x4_col(verts+off, tri, 3);  // Set Position
-                    vec3_set(verts+off+4, tri[2]);  // Set Normal
+                    mat4x4_rotate_Y(rot, rot, 90*TO_RAD * (f==4?1:-1));
+
+                int vidx[6] = {0, 1, 2, 2, 1, 3};
+
+                for (int v=0; v<6; v++) {
+                    int pt = vidx[v];
+                    int off = ((f*6)+v) * VERT_ATTRIB_ROW;
+
+                    mat4x4_mul(tri, rot, front_verts[pt]); // Rotate front face
+
+                    vec4_dup(verts+off, tri[3]);  // Set Position
+                    vec3_dup(verts+off+4, tri[2]);  // Set Normal
+                    vec2_dup(verts+off+7, (f%2==0)? UVe[pt]:UVo[pt]); // Set UV Map
                 }
             }
         }
@@ -279,17 +409,15 @@ PartInstance* cube(double size) {
 
     // Create Instance
     PartInstance* p = NewPartInstance();
-    p->Draw = drawCubeFromTriStrip;
-    p->Vertices = 24;
-    p->Triangles = 12;
+    p->ClassName = "CubePart";
+    PartSetSize(p, (vec3){size,size,size});
     p->Vao = vao;
     p->Vbo = vbo;
-    vec3_set(p->Size, (vec3){size, size, size});
-    p->ClassName = "Cube";
+    p->Vertices = 36;
+    p->DrawMode = GL_TRIANGLES;
+    p->VboReused = GL_TRUE;
     return p;
 }
-
-
 
 // SphereVertFromAngles
     // @brief Sets a vec4 to a position on a sphere of radius 1 given 2 angles
@@ -307,47 +435,41 @@ static void SphereVertFromAngles(vec4 v, double th, double ph) {
     // @param rings The amount of detail along the sphere (Y). These inputs are standardized to reduce unique vaos/vbos
     // @return Part Instance for drawing sphere. If not given enough segment/ring input, NULL is returned
     // since the requested shape is not qualified for drawing a sphere geometrically in 3D space.
-PartInstance* uvSphere(int segments, int rings, double radius) {
-    static unsigned int vao[5][5] = {{0,0,0,0,0}}, vbo[5][5] = {{0,0,0,0,0}};
-    unsigned int cvao = 0, cvbo = 0, *evao, *evbo;
-    if ((segments<=2) || (rings<=1))
-        return NULL;
+PartInstance* uvSphere(int segments, int rings, float radius) {
+    static GLuint vao[6][6] = {{0,0,0,0,0,0}}, vbo[6][6] = {{0,0,0,0,0,0}};
+    GLuint cvao = 0, cvbo = 0, *evao, *evbo;
+    if ((segments<=2) || (rings<=1)) return NULL;
     
     // Set effective vao/ vbo integer to use
-    int mem_sg=0, mem_rg=0;
-    switch(segments) {
-        case INST_XLO_SEGMTS:   mem_sg=0; break;
-        case INST_LOW_SEGMTS:   mem_sg=1; break;
-        case INST_MED_SEGMTS:   mem_sg=2; break;
-        case INST_HI_SEGMTS:    mem_sg=3; break;
-        case INST_XHI_SEGMTS:   mem_sg=4; break;
-        default:                mem_sg=-1; break;
-    }
-    switch(rings) {
-        case INST_XLO_RINGS:    mem_rg=0; break;
-        case INST_LOW_RINGS:    mem_rg=1; break;
-        case INST_MED_RINGS:    mem_rg=2; break;
-        case INST_HI_RINGS:     mem_rg=3; break;
-        case INST_XHI_RINGS:    mem_rg=4; break;
-        default:                mem_rg=-1; break;
-    }
-    if ((mem_rg==-1) || (mem_sg==-1)) {
+    int mem[2];
+    for (int i=0; i<2; i++) {
+        switch((i==0)?segments:rings) {
+            case XLO_DETAIL:    mem[i]= 0; break;  // Standard Params
+            case LO_DETAIL:     mem[i]= 1; break;
+            case MED_DETAIL:    mem[i]= 2; break;
+            case HI_DETAIL:     mem[i]= 3; break;
+            case XHI_DETAIL:    mem[i]= 4; break;
+            case XXHI_DETAIL:   mem[i]= 5; break;
+            default:            mem[i]=-1; break;  // Custom Params
+        }
+    }   
+    if ((mem[0]==-1) || (mem[1]==-1)) {
         evao=&cvao; evbo=&cvbo;
     }
     else {
-        evao=&(vao[mem_sg][mem_rg]); evbo=&(vbo[mem_sg][mem_rg]);
+        evao=&(vao[mem[0]][mem[1]]); evbo=&(vbo[mem[0]][mem[1]]);
     }
 
 
     if ((*evao==0) || (*evbo==0)) {
-        float verts[VERTEX_DATA_ROW * (rings+1) * (segments+1) * 2];
+        float verts[VERT_ATTRIB_ROW * (rings+1) * (segments+1) * 2];
         {
             double ph_inc = 180.0/(rings+1), th_inc = 360.0/segments;
             for (int r=0; r<rings+1; r++) {
                 for (int s=0; s<segments+1; s++) {
                     double ph = fmod(ph_inc*r, 180.0) - 90.0;
                     double th = fmod(th_inc*s, 360.0);
-                    int off = (r*(segments+1) + s) * 2 * VERTEX_DATA_ROW;
+                    int off = (r*(segments+1) + s) * 2 * VERT_ATTRIB_ROW;
 
                     // Get Vert Positions
                     vec4 p1, p2;
@@ -355,10 +477,24 @@ PartInstance* uvSphere(int segments, int rings, double radius) {
                     SphereVertFromAngles(p2, th, ph+ph_inc); vec3_scale(p2, p2, .5);
                     
                     // Set Positions
-                    vec4_set(verts+off, p1);    // Vert1 Position
-                    vec3_set(verts+off+4, p1);  // Vert1 Normal
-                    vec4_set(verts+off + VERTEX_DATA_ROW, p2);  // Vert2 Position
-                    vec3_set(verts+off+4+VERTEX_DATA_ROW, p2);  // Vert2 Normal
+                    vec4_dup(verts+off, p1);    // Vert1 Position
+                    vec3_dup(verts+off+4, p1);  // Vert1 Normal
+                    vec4_dup(verts+off + VERT_ATTRIB_ROW, p2);  // Vert2 Position
+                    vec3_dup(verts+off+4+VERT_ATTRIB_ROW, p2);  // Vert2 Normal
+                    
+
+                    float a = (th_inc*s)/90.f;
+                    float b = (ph+90.)/90.f;
+                    float c = (ph+ph_inc+90.)/90.f;
+                    //b = (b<1)? b: 2-b;
+                    //c = (c<1)? c: 2-c;
+
+                    //float u = sin((th_inc*s) * TO_RAD);
+                    //float v = cos((th_inc*s) * TO_RAD);
+                    vec2 uv1={a, b}, uv2 = {a, c};
+                    
+                    vec2_dup(verts+off+7, uv1);
+                    vec2_dup(verts+off+7+VERT_ATTRIB_ROW, uv2);
                 }
             }
         }
@@ -367,13 +503,14 @@ PartInstance* uvSphere(int segments, int rings, double radius) {
 
     // Create Instance
     PartInstance* p = NewPartInstance();
-    p->Draw = drawUVSphereFromTriStrip;
-    p->Vertices = (rings+1) * (segments+1) * 2;
-    p->Triangles = (rings+1) * segments * 2;
+    p->Name = "NewUVSphere";
+    p->ClassName = "UVSpherePart";
+    PartSetSize(p, (vec3){radius*2, radius*2, radius*2});
     p->Vao = *evao;
     p->Vbo = *evbo;
-    vec3_set(p->Size, (vec3){radius*2, radius*2, radius*2});
-    p->ClassName = "UVSphere";
+    p->Vertices = p->Vertices = (rings+1) * (segments+1) * 2;
+    p->DrawMode = GL_TRIANGLE_STRIP;
+    p->VboReused = ((mem[0]==-1) || (mem[1]==-1))? GL_FALSE : GL_TRUE;
     return p;
 }
 
@@ -381,8 +518,8 @@ PartInstance* uvSphere(int segments, int rings, double radius) {
     // @brief Contructs a part instance for rendering a cylinder
     // @param sides Number of sides to render on cylinder; inputs are standardized to reduce unique vaos/vbos
     // @return Part Instance for drawing cylinder
-PartInstance* cylinder(int sides, double radius, double depth) {
-    static unsigned int vao[5] = {0}, vbo[5] = {0};
+PartInstance* cylinder(int sides, float radius, float depth) {
+    static unsigned int vao[6] = {0}, vbo[6] = {0};
     unsigned int cvao = 0, cvbo = 0, *evao, *evbo;
     if (sides<=2)
         return NULL;
@@ -390,12 +527,13 @@ PartInstance* cylinder(int sides, double radius, double depth) {
     // Set effective vao/ vbo integer to use
     int mem = -1;
     switch(sides) {
-        case INST_XLO_SEGMTS:   mem=0; break;
-        case INST_LOW_SEGMTS:   mem=1; break;
-        case INST_MED_SEGMTS:   mem=2; break;
-        case INST_HI_SEGMTS:    mem=3; break;
-        case INST_XHI_SEGMTS:   mem=4; break;
-        default:                mem=-1; break;
+        case XLO_DETAIL:    mem= 0; break;  // Standard Params
+        case LO_DETAIL:     mem= 1; break;
+        case MED_DETAIL:    mem= 2; break;
+        case HI_DETAIL:     mem= 3; break;
+        case XHI_DETAIL:    mem= 4; break;
+        case XXHI_DETAIL:   mem= 5; break;
+        default:            mem=-1; break;  // Custom Params
     }
     if (mem==-1) {
         evao = &cvao; evbo = &cvbo;
@@ -406,40 +544,90 @@ PartInstance* cylinder(int sides, double radius, double depth) {
     
 
     if ((*evao==0) || (*evbo==0)) {
-        float verts[2*(2*sides+3) * VERTEX_DATA_ROW];
+        float verts[(6*sides+4) * VERT_ATTRIB_ROW];
         {
-            // Triangle Fans (Top & Bottom) [Each (sides+2) vertices]
-            for (int bt=0; bt<2; bt++) {
-                float s = .5; float sgn = (bt?-1.0:1.0);
-                
-                int off0 = bt*(sides+2) * VERTEX_DATA_ROW;
-                vec3 normal = {0, sgn, 0};
-                vec4_set((float*) (verts+off0), (vec4){0,s,0,1});
-                vec3_set((float*) (verts+off0+4), normal);
-                for (int i=0; i<sides+1; i++) {
-                    int off = (i+1) * VERTEX_DATA_ROW + off0;
-                    double a = (float)i * (360.0/(float)sides); // Angle
-                    vec4 pos = {s*cosf(a*TO_RAD), sgn*s, sgn*s*sinf(a*TO_RAD), 1};
+            // Top [sides*2 +1]
+            float s=.5;
+            {
+                vec3 normal = {0,s,0};
+                for (int i=0; i<sides; i++) {
+                    int off0 = (i*2)*VERT_ATTRIB_ROW;
+                    int off1 = (i*2+1)*VERT_ATTRIB_ROW;
+                    float a = (float)i * (360.0/(float)sides) *TO_RAD;
+                    vec4 pos = {s*sinf(a), s, s*cosf(a), 1};
+                    vec2 uv = {pos[0]+s, pos[2]+s};
 
-                    vec4_set((float*) (verts+off), pos);        // Position
-                    vec3_set((float*) (verts+off+4), normal);   // Normal
+                    // Outer
+                    vec4_dup((float*) verts+off0+0, pos);
+                    vec3_dup((float*) verts+off0+4, normal);
+                    vec2_dup((float*) verts+off0+7, uv);
+                    // Inner
+                    vec4_dup((float*) verts+off1+0, (vec4){0,s,0,1});
+                    vec3_dup((float*) verts+off1+4, normal);
+                    vec2_dup((float*) verts+off1+7, (vec2){.5,.5});
+                } {
+                    int off0 = (sides*2)*VERT_ATTRIB_ROW;
+                    vec4 pos = {s*sinf(0), s, s*cosf(0), 1};
+                    vec2 uv = {pos[0]+s, pos[2]+s};
+
+                    vec4_dup((float*) verts+off0+0, pos);
+                    vec3_dup((float*) verts+off0+4, normal);
+                    vec2_dup((float*) verts+off0+7, uv);
                 }
             }
+            // Side [sides*2 + 2]
+            {
+                int topoff = (sides*2+1) * VERT_ATTRIB_ROW;
+                for (int i=0; i<sides+1; i++) {
+                    int off0 = (i*2)*VERT_ATTRIB_ROW + topoff;
+                    int off1 = (i*2+1)*VERT_ATTRIB_ROW + topoff;
+                    float a = (float)i * (360.0/(float)sides) *TO_RAD;
+                    vec4 pos0 = {s*sinf(a), s, s*cosf(a), 1};
+                    vec4 pos1 = {s*sinf(a), -s, s*cosf(a), 1};
+                    vec3 normal = {sinf(a), 0, cosf(a)};
 
-            // Triangle Strip (Side) [2(sides+1) vertices]
-            int off1 = 2*(sides+2) * VERTEX_DATA_ROW;
-            for (int i=0; i<sides+1; i++) {
-                float s=.5;
-                int off = (i*2)*VERTEX_DATA_ROW + off1;
-                double a = (float)i * (360.0/(float)sides); // Angle
-                vec4 p1 = {s*cosf(a*TO_RAD), s, s*sinf(a*TO_RAD), 1};
-                vec4 p2 = {s*cosf(a*TO_RAD), -s, s*sinf(a*TO_RAD), 1};
-                vec3 normal = {cosf(a*TO_RAD), 0, sinf(a*TO_RAD)};
+                    float u = (a*TO_DEG)/180.f;
+                    //u = u<1? u: 2-u;
+                    
 
-                vec4_set((float*) (verts+off), p1);         // Vert1 Position
-                vec3_set((float*) (verts+off+4), normal);   // Vert1 Normal
-                vec4_set((float*) (verts+off+VERTEX_DATA_ROW), p2);         // Vert2 Position
-                vec3_set((float*) (verts+off+4+VERTEX_DATA_ROW), normal);   // Vert2 Normal
+                    // Outer
+                    vec4_dup((float*) verts+off0+0, pos0);
+                    vec3_dup((float*) verts+off0+4, normal);
+                    vec2_dup((float*) verts+off0+7, (vec2){u, 1});
+                    // Inner
+                    vec4_dup((float*) verts+off1+0, pos1);
+                    vec3_dup((float*) verts+off1+4, normal);
+                    vec2_dup((float*) verts+off1+7, (vec2){u, 0});
+                }
+            }
+            // Bottom [sides*2 + 1]
+            {
+                int sideoff = (sides*4+3) * VERT_ATTRIB_ROW;
+                vec3 normal = {0,-s,0};
+                for (int i=0; i<sides; i++) {
+                    int off0 = (i*2)*VERT_ATTRIB_ROW + sideoff;
+                    int off1 = (i*2+1)*VERT_ATTRIB_ROW + sideoff;
+                    float a = (float)i * (360.0/(float)sides) *TO_RAD;
+                    vec4 pos = {s*sinf(a), -s, s*cosf(a), 1};
+                    vec2 uv = {pos[0]+s, pos[2]+s};
+
+                    // Outer
+                    vec4_dup((float*) verts+off0+0, pos);
+                    vec3_dup((float*) verts+off0+4, normal);
+                    vec2_dup((float*) verts+off0+7, uv);
+                    // Inner
+                    vec4_dup((float*) verts+off1+0, (vec4){0,-s,0,1});
+                    vec3_dup((float*) verts+off1+4, normal);
+                    vec2_dup((float*) verts+off1+7, (vec2){.5,.5});
+                } {
+                    int off0 = (sides*2)*VERT_ATTRIB_ROW  + sideoff;
+                    vec4 pos = {s*sinf(0), -s, s*cosf(0), 1};
+                    vec2 uv = {pos[0]+s, pos[2]+s};
+
+                    vec4_dup((float*) verts+off0+0, pos);
+                    vec3_dup((float*) verts+off0+4, normal);
+                    vec2_dup((float*) verts+off0+7, uv);
+                }
             }
         }
         buildVAOVBO(evao, evbo, verts, sizeof(verts));
@@ -447,105 +635,16 @@ PartInstance* cylinder(int sides, double radius, double depth) {
 
     // Create Instance
     PartInstance* p = NewPartInstance();
-    p->Draw = drawCylinder;
-    p->Vertices = 2*(2*sides+3);
-    p->Triangles = 4*sides;
+    p->Name = "NewCylinder";
+    p->ClassName = "CylinderPart";
+    PartSetSize(p, (vec3){radius*2, depth, radius*2});
     p->Vao = *evao;
     p->Vbo = *evbo;
-    vec3_set(p->Size, (vec3){radius*2, depth, radius*2});
-    p->ClassName = "Cylinder";
+    p->Vertices = (6*sides)+4;
+    p->DrawMode = GL_TRIANGLE_STRIP;
+    p->VboReused = (mem==-1)? GL_FALSE : GL_TRUE;
     return p;
 }
-
-// Cone
-    // @brief Contructs a part instance for rendering a cone
-    // @param sides Number of sides to render on cylinder; inputs are standardized to reduce unique vaos/vbos
-    // @param rad0 Radius of bottom of cone
-    // @param rad1 Radius of top of cone; If not 0, a new VAO/VBO will be created as the radius ratio is not standardized
-    // @param depth Size of cone depth
-    // @return Part Instance for drawing cone
-PartInstance* cone(int sides, double rad0, double rad1, double depth) {
-    static unsigned int vao[5], vbo[5];
-    unsigned int cvao = 0, cvbo = 0, *evao, *evbo;
-    int frustum = (rad1!=0);
-
-    // Set effective vao/ vbo integer to use
-    int mem = -1;
-    switch(sides) {
-        case INST_XLO_SEGMTS:   mem=0; break;
-        case INST_LOW_SEGMTS:   mem=1; break;
-        case INST_MED_SEGMTS:   mem=2; break;
-        case INST_HI_SEGMTS:    mem=3; break;
-        case INST_XHI_SEGMTS:   mem=4; break;
-        default:                mem=-1; break;
-    }
-    if ((mem==-1) || (frustum)) {
-        evao = &cvao; evbo = &cvbo;
-    }
-    else {
-        evao = &vao[mem]; evbo = &vbo[mem];
-    }
-
-    if ((*evao==0) || (*evbo==0)) {
-        float verts[ ((frustum?2:1)*(sides+2) + (2*(sides+1))) * VERTEX_DATA_ROW];
-        {
-            // Modified cylinder code
-            // Triangle Strip (Side) [2(sides+1) vertices]
-            float s0 = .5, s1 = (rad0>0)? .5*rad1/rad0 : 1;
-            for (int i=0; i<sides+1; i++) {
-                int off = (i*2)*VERTEX_DATA_ROW;
-                
-                // Calculate Vertices
-                double a = (float)i * (360.0/(float)sides); // Angle
-                vec4 p1 = {s0*sinf(a*TO_RAD), -s0, s0*cosf(a*TO_RAD), 1};
-                vec4 p2 = {s1*sinf(a*TO_RAD), s0, s1*cosf(a*TO_RAD), 1};
-                
-                // Calculate Normal
-                float sl = 1/(rad0-rad1); 
-                double b = atanf(sl);
-                vec3 normal = {cosf(b)*cosf(a*TO_RAD), cosf(b), cosf(b)*sinf(a*TO_RAD)};
-
-                vec4_set((float*) (verts+off), p1);         // Vert1 Position
-                vec3_set((float*) (verts+off+4), normal);   // Vert1 Normal
-                vec4_set((float*) (verts+off+VERTEX_DATA_ROW), p2);         // Vert2 Position
-                vec3_set((float*) (verts+off+4+VERTEX_DATA_ROW), normal);   // Vert2 Normal
-            }
-
-            // Triangle Fans (Bottom & Top (if frustum)) [Each (sides+2) vertices]
-            int off0 = 2*(sides+1) * VERTEX_DATA_ROW;
-            for (int bt=0; bt<(frustum?2:1); bt++) {
-                float sgn = (bt?1:-1);
-                float s = (bt?s1:s0);
-                
-                int off1 = bt*(sides+2) * VERTEX_DATA_ROW + off0;
-                vec3 normal = {0, sgn, 0};
-                vec4_set((float*) (verts+off1), (vec4){0,sgn*s0,0,1});
-                vec3_set((float*) (verts+off1+4), normal);
-                for (int i=0; i<sides+1; i++) {
-                    int off = (i+1) * VERTEX_DATA_ROW + off1;
-                    double a = 360-((float)i * (360.0/(float)sides)); // Angle
-                    vec4 pos = {s*sinf(sgn*a*TO_RAD), sgn*s0, s*cosf(sgn*a*TO_RAD), 1};
-
-                    vec4_set((float*) (verts+off), pos);        // Position
-                    vec3_set((float*) (verts+off+4), normal);   // Normal
-                }
-            }
-        }
-        buildVAOVBO(evao, evbo, verts, sizeof(verts));
-    }
-    
-    // Create Instance
-    PartInstance* p = NewPartInstance();
-    p->Draw = (frustum)? drawFrustumCone: drawCone;
-    p->Vertices = (frustum?2:1)*(sides+2) + (2*(sides+1));
-    p->Triangles = (frustum?4:3)*sides;
-    p->Vao = *evao;
-    p->Vbo = *evbo;
-    vec3_set(p->Size, (vec3){rad0*2, depth, rad0*2});
-    p->ClassName = (frustum)? "FrustumCone":"Cone";
-    return p;
-}
-
 
 // clonePart
     // @brief Duplicates a part instance resuing all set properties including vao/vbo properties
@@ -560,113 +659,679 @@ PartInstance* clonePart(PartInstance* src) {
 
 
 
-// Translated from hw4 w/ Legacy OpenGL
-void partArc(VerseInstance* self, PartInstance* arcit,
-        vec3 pos, vec3 rot, vec3 scale, 
-        double a, double width, int n
-    ) {
-    mat4x4 M;
-    mat4x4_identity(M);
-    mat4x4_scale_aniso(M, M, scale[0], scale[1], scale[2]);
-    mat4x4_rotate_Y(M, M, rot[1]);
-    mat4x4_rotate_Z(M, M, rot[2]);
-    mat4x4_rotate_X(M, M, rot[0]);
-    vec3_set(M[3], pos);
+// Methods
+void PartSetParent(PartInstance* p, OriginInstance* parent) {
+    if (p->Parent!=NULL)
+        _OriginRemovePart(p->Parent, p);
     
-    double dp = (width/2) / tan(a/2*TO_RAD);
-    double r = sqrt(pow(dp,2))+pow(width/2,2);
-    for (int i=0; i<n; i++) {
-        double ang = -(a/2) + (i*(a/(n-1+1e-5)));
-        double x = r * sin(ang * TO_RAD);
-        double y = r * cos(ang * TO_RAD) - dp;
+    if (parent!=NULL) {
+        int res = _OriginAddPart(parent, p);
+        if (res<0)
+            Error("Could not add new part (%s) to origin (%s)", p->Name, parent->Name);
+    }
+    p->Parent = parent;
+}
 
-        PartInstance *nwp;
-        VerseAddPart(self, nwp = clonePart(arcit)); {
-            PartSetPosition(nwp, (vec3){x,y,0});
-            PartSetRotation(nwp, (vec3){0,0,-ang});
-            mat4x4_mul(nwp->CFrame, M, nwp->CFrame);
+void PartSetSize(PartInstance* p, vec3 size) {
+    vec3_dup(p->Size, size);
+}
+
+void PartSetPivot(PartInstance* p, vec3 pivot) {
+    vec3_dup(p->Pivot, pivot);
+}
+
+void PartSetPosition(PartInstance* p, vec3 pos) {
+    vec3_dup(p->CFrame[3], pos);
+}
+
+void PartSetRotation(PartInstance* p, vec3 rot, int euler_order) {
+    mat4x4 temp;
+    mat4x4_from_euler(temp, rot, euler_order);
+    for (int i=0; i<3; i++)
+        vec4_dup(p->CFrame[i], temp[i]);
+}
+
+void PartSetCFrame(PartInstance* p, mat4x4 cf) {
+    mat4x4_dup(p->CFrame, cf);
+}
+
+void PartSetNodeAttribByName(PartInstance* p, GLenum nodetype, char* name, vec4 val) {
+    if (!(nodetype<3)) return;
+    
+    GLuint node = p->VertNodes[nodetype];
+    int loc = glGetAttribLocation(node, name);
+    if ((loc >= ATTRIB_POS_NODE) && (loc<ATTRIB_POS_NODE+4)) {
+        int col = loc - ATTRIB_POS_NODE;
+        vec4_dup(p->NodeAttribs[nodetype][col], val);
+    }
+}
+
+void PartSetColor(PartInstance* p, color4 col) {
+    vec4_from_col(p->Color, col);
+}
+
+void PartAddLightGroup(PartInstance* p, GLuint lg) {
+    for (int i=0; i<MAX_LIGHTGROUPS; i++) {
+        if (p->LightGroups[i] == 0) {
+            p->LightGroups[i] = lg;
+            break;
+        }
+    }
+}
+
+void PartRemoveLightGroup(PartInstance* p, GLuint lg) {
+    for (int i=0; i<MAX_LIGHTGROUPS; i++) {
+        if (p->LightGroups[i]==lg) {
+            for (int j=i; j<MAX_LIGHTGROUPS-1; j++)
+                p->LightGroups[j]=p->LightGroups[j+1];
+            p->LightGroups[MAX_LIGHTGROUPS-1] = 0;
+            break;
         }
     }
 }
 
 
 
-// Part Instance Methods
-void PartSetColor(PartInstance* p, color3 c) {
-    for (int i=0; i<3; i++) 
-        p->Color[i]=c[i];
+
+
+
+
+
+// LIGHT INSTANCE
+// Generic Constructor/Deconstructor
+LightInstance* NewLightInstance() {
+    LightInstance* l = malloc(sizeof(LightInstance));
+    // Book Keeping
+    l->Name = "NewLight";
+    l->ClassName = "BaseLight";
+    l->Parent = NULL;
+    l->CanRender = GL_TRUE;
+
+    // Default Light Uniforms
+    vec4_set(l->Color, 1.f);
+    mat4x4_identity(l->CFrame);
+    l->LightEnum = ENUM_LIGHT_NONE;
+
+    // Shader settings
+    l->OutFBO = 0;
+    l->OverShadeNode = 0;
+    l->Noding= ENUM_NODE_LIGHT;
+    l->BlendSrc = GL_ONE; 
+    l->BlendDst = GL_ZERO;
+
+    l->ZIndex = 0;
+    l->LightGroup = GLOBAL_LIGHTGROUP;
+    l->UseTexture = 0;
+
+    // Custom Uniforms
+    for (int i=0; i<MAX_TEX_UNIFORMS; i++) l->TexUniforms[i].Name = NULL;
+    for (int i=0; i<MAX_VEC_UNIFORMS; i++) l->VecUniforms[i].Name = NULL;
+    for (int i=0; i<MAX_MAT_UNIFORMS; i++) l->MatUniforms[i].Name = NULL;
+    
+    // Internal
+    l->_Malloced = GL_TRUE;
+
+    // Events
+    SignalInit(&l->PrePass);
+    SignalInit(&l->PostPass);
+    return l;
 }
 
-void PartSetCFrame(PartInstance* p, mat4x4 cf) {
-    vec4 pos;
-    //float rx, ry, rz;
+void* DestroyLightInstance(LightInstance* l) {
+    // Remove References
+    LightSetParent(l, NULL);
+    if (l->_Malloced) {
+        l->_Malloced = GL_FALSE;
+        free(l);
+    }
+    return NULL;
+}
 
-    // TODO
-    // Find YXZ Euler Angles from Rotation Matrix
-    // Credit: http://eecs.qmul.ac.uk/~gslabaugh/publications/euler.pdf
+// Primitive Light Constructors
+LightInstance* globalOcclusion() {
+    LightInstance* l = NewLightInstance();
 
-    mat4x4_dup(p->CFrame, cf);
-    mat4x4_col(pos, cf, 3);
-    for (int i=0; i<3; i++) {
-        p->Position[i]=pos[i];
+    l->LightEnum = ENUM_LIGHT_OCCLUSION;
+    l->OutFBO = 0;
+    l->Noding = ENUM_NODE_LIGHT;
+    l->BlendSrc = GL_ONE;
+    l->BlendDst = GL_ONE_MINUS_SRC_ALPHA;
+    l->LightGroup = GLOBAL_LIGHTGROUP;
+    l->UseTexture = GL_FALSE;
+
+    return l;
+}
+
+LightInstance* ambientLight() {
+    LightInstance* l = NewLightInstance();
+
+    l->ClassName = "AmbientLight";
+    l->LightEnum = ENUM_LIGHT_AMBIENT;
+
+    return l;
+}
+
+LightInstance* pointLight(float radius) {
+    LightInstance* l = NewLightInstance();
+
+    l->ClassName = "PointLight";
+    l->LightEnum = ENUM_LIGHT_POINT;
+    LightSetVecUniform(l, UNI_NAME_LIGHT_RADIUS, (float[]){radius}, 1);
+
+    return l;
+}
+
+LightInstance* spotLight(float radius, float inner_angle, float outer_angle) {
+    LightInstance* l = NewLightInstance();
+
+    l->ClassName = "SpotLight";
+    l->LightEnum = ENUM_LIGHT_SPOT;
+    LightSetVecUniform(l, UNI_NAME_LIGHT_RADIUS, (float[]){radius}, 1);
+    LightSetVecUniform(l, UNI_NAME_LIGHT_THETA0, (float[]){inner_angle}, 1);
+    LightSetVecUniform(l, UNI_NAME_LIGHT_THETA1, (float[]){outer_angle}, 1);
+
+    return l;
+}
+
+LightInstance* cloneLight(LightInstance* l) {
+    LightInstance* new = NewLightInstance();
+    memcpy(new, l, sizeof(LightInstance));
+    return new;
+}
+
+
+
+
+// Methods
+void LightSetParent(LightInstance* l, OriginInstance* parent) {
+    if (l->Parent!=NULL)
+        _OriginRemoveLight(l->Parent, l);
+    
+    if (parent!=NULL) {
+        int res = _OriginAddLight(parent, l);
+        if (res<0)
+            Error("Could not add new light (%s) to origin (%s)", l->Name, parent->Name);
+    }
+    l->Parent = parent;
+}
+
+void LightSetColor(LightInstance* l, color4 col){
+    vec4_from_col(l->Color, col);
+}
+
+void LightSetPosition(LightInstance* l, vec3 pos) {
+    vec3_dup(l->CFrame[3], pos);
+}
+
+void LightSetRotation(LightInstance* l, vec3 rot, int euler_order) {
+    mat4x4 temp;
+    mat4x4_from_euler(temp, rot, euler_order);
+    for (int i=0; i<3; i++)
+        vec4_dup(l->CFrame[i], temp[i]);
+}
+
+void LightSetCFrame(LightInstance* l, mat4x4 cf) {
+    mat4x4_dup(l->CFrame, cf);
+}
+
+void LightSetIntUniform(LightInstance* l, char* name, GLuint val) {
+    // Set Existing
+    for (int i=0; i<MAX_TEX_UNIFORMS; i++) {
+        if (l->TexUniforms[i].Name==NULL) continue;
+        if (strcmp(l->TexUniforms[i].Name, name)==0) {
+            l->TexUniforms[i].Value = val;
+            return;
+        }
+    }
+    // New
+    for (int i=0; i<MAX_TEX_UNIFORMS; i++) {
+        if ((l->TexUniforms[i].Name==NULL) || (strcmp(l->TexUniforms[i].Name, "")==0)) {
+            l->TexUniforms[i].Name = name;
+            l->TexUniforms[i].Value = val;
+            return;
+        }
     }
 }
 
-void PartSetPivot(PartInstance* p, vec3 pivot) {
-    vec3_set(p->Pivot, pivot);
+void LightSetVecUniform(LightInstance* l, char* name, float val[], int n) {
+    // Set Existing
+    for (int i=0; i<MAX_VEC_UNIFORMS; i++) {
+        if (l->VecUniforms[i].Name==NULL) continue;
+        if (strcmp(l->VecUniforms[i].Name, name)==0) {
+            l->VecUniforms[i].N = n;
+            for (int j=0; j<n; j++) l->VecUniforms[i].Value[j] = val[j];
+            return;
+        }
+    }
+    // New
+    for (int i=0; i<MAX_VEC_UNIFORMS; i++) {
+        if ((l->VecUniforms[i].Name==NULL) || (strcmp(l->VecUniforms[i].Name, "")==0)) {
+            l->VecUniforms[i].Name = name;
+            l->VecUniforms[i].N = n;
+            for (int j=0; j<n; j++) l->VecUniforms[i].Value[j] = val[j];
+            return;
+        }
+    }
 }
 
-void PartSetSize(PartInstance* p, vec3 s) {
-    for (int i=0; i<3; i++) 
-        p->Size[i]=s[i];
+void LightSetMatUniform(LightInstance* l, char* name, mat4x4 val, int n, int m) {
+    // Set Existing
+    for (int i=0; i<MAX_MAT_UNIFORMS; i++) {
+        if (l->MatUniforms[i].Name==NULL) continue;
+        if (strcmp(l->MatUniforms[i].Name, name)==0) {
+            l->MatUniforms[i].N = n;
+            l->MatUniforms[i].M = m;
+            mat4x4_dup(l->MatUniforms->Value, val);
+            return;
+        }
+    }
+    // New
+    for (int i=0; i<MAX_MAT_UNIFORMS; i++) {
+        if ((l->MatUniforms[i].Name==NULL) || (strcmp(l->MatUniforms[i].Name, "")==0)) {
+            l->MatUniforms[i].Name = name;
+            l->MatUniforms[i].N = n;
+            l->MatUniforms[i].M = m;
+            mat4x4_dup(l->MatUniforms->Value, val);
+            return;
+        }
+    }
 }
 
-void PartSetPosition(PartInstance* p, vec3 pos) {
-    mat4x4 temp;
-    for (int i=0; i<3; i++) 
-        p->Position[i]=pos[i] - (p->Pivot[i]*p->Size[i]);
+void LightRemoveIntUniform(LightInstance* l, char* name) {
+    for (int i=0; i<MAX_TEX_UNIFORMS; i++) {
+        if (l->TexUniforms[i].Name==NULL) continue;
+        if (strcmp(l->TexUniforms[i].Name, name)==0) 
+            l->TexUniforms[i].Name = NULL;
+    }
+}
+
+void LightRemoveVecUniform(LightInstance* l, char* name) {
+    for (int i=0; i<MAX_VEC_UNIFORMS; i++) {
+        if (l->VecUniforms[i].Name==NULL) continue;
+        if (strcmp(l->VecUniforms[i].Name, name)==0) 
+            l->VecUniforms[i].Name = NULL;
+    }
+}
+
+void LightRemoveMatUniform(LightInstance* l, char* name) {
+    for (int i=0; i<MAX_MAT_UNIFORMS; i++) {
+        if (l->MatUniforms[i].Name==NULL) continue;
+        if (strcmp(l->MatUniforms[i].Name, name)==0) 
+            l->MatUniforms[i].Name = NULL;
+    }
+}
+
+
+
+
+
+
+
+
+// ORIGIN INSTANCE
+// Generic Constructor/Deconstructor
+static void _OriginDefault(OriginInstance* o) {
+    o->Name = "NewOrigin";
+    o->ClassName = "BaseOrigin";
+    o->Parent = NULL;
+    o->CanRender = GL_TRUE;
     
-    mat4x4_translate(temp, p->Position[0], p->Position[1], p->Position[2]);
-    for (int r=0; r<3; r++) for (int c=0; c<3; c++)
-        temp[r][c]=p->CFrame[r][c];
-    mat4x4_dup(p->CFrame, temp);
+    // Origin
+    mat4x4_identity(o->CFrame);
+    o->NumParts = o->NumLights = o->NumOrigins = 0;
+    for (int i=0; i<MAX_PART_INSTANCES; i++) o->Parts[i] = NULL;
+    for (int i=0; i<MAX_LIGHT_INSTANCES; i++) o->Lights[i] = NULL;
+    for (int i=0; i<MAX_ORIGIN_INSTANCES; i++) o->Origins[i] = NULL;  
+
+    // Bounding Box
+    vec3_zero(o->BoundingBoxSize);
+    mat4x4_identity(o->BoundingBoxCFrame);
+
+    // Internal
+    o->_Malloced = GL_FALSE;
 }
 
-void PartSetRotation(PartInstance* p, vec3 r) {
+OriginInstance* NewOriginInstance() {
+    OriginInstance* o = malloc(sizeof(OriginInstance));
+    _OriginDefault(o);
+    o->_Malloced = GL_TRUE;
+    return o;
+}
+
+void* DestroyOriginInstance(OriginInstance* o) {
+    // Remove Instances
+    OriginSetParent(o, NULL);
+    for (int i=0; i<MAX_PART_INSTANCES; i++) {
+        PartInstance* child = o->Parts[i];
+        o->Parts[i] = NULL;
+
+        if (child==NULL) break;
+        child->Parent = NULL;
+        DestroyPartInstance(child);
+    }
+    for (int i=0; i<MAX_LIGHT_INSTANCES; i++) {
+        LightInstance* child = o->Lights[i];
+        o->Lights[i] = NULL;
+        
+        if (child==NULL) break;
+        child->Parent = NULL;
+        DestroyLightInstance(child);
+    }
+    for (int i=0; i<MAX_ORIGIN_INSTANCES; i++) {
+        OriginInstance* child = o->Origins[i];
+        o->Origins[i] = NULL;
+        
+        if (child==NULL) break;
+        child->Parent = NULL;
+        DestroyOriginInstance(child);
+    }
+    
+    if (o->_Malloced) {
+        o->_Malloced = GL_FALSE;
+        free(o);
+    }
+    return NULL;
+}
+
+
+// Custom constructors
+OriginInstance* arcPart(PartInstance* arcit,
+                        vec3 pos, vec3 rot, vec3 scale, 
+                        double a, double width, int n
+) {
+    // TODO
+    return NULL;
+}
+
+OriginInstance* circlePart(PartInstance* ref,
+                           float radius, int n
+) {
+    // TODO
+    return NULL;
+}
+
+OriginInstance* cloneOrigin(OriginInstance* o) {
+    OriginInstance* new = NewOriginInstance();
+    
+    new->Name = o->Name;
+    new->ClassName = o->ClassName;
+    new->Parent = o->Parent;
+    new->CanRender = o->CanRender;
+
+    mat4x4_dup(new->CFrame, o->CFrame);
+    for (int i=0; i<MAX_PART_INSTANCES; i++) {
+        PartInstance* ch = o->Parts[i];
+        if (ch==NULL) break;
+
+        ch = clonePart(ch);
+        PartSetParent(ch, new);
+    }
+    for (int i=0; i<MAX_LIGHT_INSTANCES; i++) {
+        LightInstance* ch = o->Lights[i];
+        if (ch==NULL) break;
+
+        ch = cloneLight(ch);
+        LightSetParent(ch, new);
+    }
+    for (int i=0; i<MAX_ORIGIN_INSTANCES; i++) {
+        OriginInstance* ch = o->Origins[i];
+        if (ch==NULL) break;
+
+        ch = cloneOrigin(ch);
+        OriginSetParent(ch, new);
+    }
+    vec3_dup(new->BoundingBoxSize, o->BoundingBoxSize);
+    mat4x4_dup(new->BoundingBoxCFrame, o->BoundingBoxCFrame);
+
+    return new;
+}
+
+
+// Methods
+void OriginSetParent(OriginInstance* o, OriginInstance* parent) {
+    if (o->Parent!=NULL)
+        _OriginRemoveOrigin(o->Parent, o);
+    
+    if (parent!=NULL) {
+        int res = _OriginAddOrigin(parent, o);
+        if (res<0)
+            Error("Could not add new origin (%s) to origin (%s)", o->Name, parent->Name);
+    }
+    o->Parent = parent;
+}
+
+void OriginSetPosition(OriginInstance* o, vec3 pos) {
+    vec3_dup(o->CFrame[3], pos);
+}
+
+void OriginSetRotation(OriginInstance* o, vec3 rot, int euler_order) {
     mat4x4 temp;
-    for (int i=0; i<3; i++) 
-        p->Rotation[i]=r[i];
-
-    mat4x4_identity(temp);
-    // Euler YXZ
-    mat4x4_rotate_Y(temp, temp, r[1]*TO_RAD);
-    mat4x4_rotate_X(temp, temp, r[0]*TO_RAD);
-    mat4x4_rotate_Z(temp, temp, r[2]*TO_RAD);
-    for (int i=0; i<3; i++) 
-        temp[3][i]=p->CFrame[3][i];
-    mat4x4_dup(p->CFrame, temp);
+    mat4x4_from_euler(temp, rot, euler_order);
+    for (int i=0; i<3; i++)
+        vec4_dup(o->CFrame[i], temp[i]);
 }
 
-void PartSetShader(PartInstance* p, GLuint s) {
-    p->Shader=s;
+void OriginSetCFrame(OriginInstance* o, mat4x4 cf) {
+    mat4x4_dup(o->CFrame, cf);
+}
+
+PartInstance* OriginFindFirstPart(OriginInstance* o, char* Name, unsigned char recursive_depth) {
+    for (int i=0; i<MAX_PART_INSTANCES; i++) {
+        if ((o->Parts[i]!=NULL) && (strcmp(o->Parts[i]->Name, Name)==0))
+            return o->Parts[i];
+    }
+    if (recursive_depth) for (int i=0; i<o->NumOrigins; i++) {
+        if (o->Origins[i]==NULL) 
+            break;
+        
+        PartInstance* ret = OriginFindFirstPart(o->Origins[i], Name, recursive_depth-1);
+        if (ret!=NULL) 
+            return ret;
+    }
+    return NULL;
+}
+
+LightInstance* OriginFindFirstLight(OriginInstance* o, char* Name, unsigned char recursive_depth) {
+    for (int i=0; i < MAX_LIGHT_INSTANCES; i++) {
+        if ((o->Lights[i]!=NULL) && (strcmp(o->Lights[i]->Name, Name)==0))
+            return o->Lights[i];
+    }
+    if (recursive_depth) for (int i=0; i < o->NumOrigins; i++) {
+        if (o->Origins[i]==NULL) 
+            break;
+        
+        LightInstance* ret = OriginFindFirstLight(o->Origins[i], Name, recursive_depth-1);
+        if (ret!=NULL) 
+            return ret;
+    }
+    return NULL;
+}
+
+OriginInstance* OriginFindFirstOrigin(OriginInstance* o, char* Name, unsigned char recursive_depth) {
+    for (int i=0; i<MAX_ORIGIN_INSTANCES; i++) {
+        if ((o->Origins[i]!=NULL) && (strcmp(o->Origins[i]->Name, Name)==0))
+            return o->Origins[i];
+    }
+    if (recursive_depth) for (int i=0; i < o->NumOrigins; i++) {
+        if (o->Origins[i]==NULL) 
+            break;
+        
+        OriginInstance* ret = OriginFindFirstOrigin(o->Origins[i], Name, recursive_depth-1);
+        if (ret!=NULL) 
+            return ret;
+    }
+    return NULL;
+}
+
+void OriginUpdateBoundingBox(OriginInstance* o) {
+    if (!(o->Parts[0])) {
+        mat4x4_identity(o->BoundingBoxCFrame);
+        vec3_zero(o->BoundingBoxSize);
+        return;
+    }
+    
+    mat4x4 rot;
+    vec3 minv = {0,0,0}, maxv = {0,0,0};
+    mat4x4_invert(rot, o->Parts[0]->CFrame);    // Get inverted rotation matrix of first part
+    vec4_dup(rot[3], UNIT4_W);                  // Remove position
+    
+    // Find mim and max bounds of each part on each axis
+    for (int i=0; i<MAX_PART_INSTANCES; i++) {
+        PartInstance* ch = o->Parts[i];
+        if (ch==NULL) break;
+
+        mat4x4 use;
+        mat4x4_mul(use, ch->CFrame, rot);
+        for (int x=0; x<2; x++)
+        for (int y=0; y<2; y++)
+        for (int z=0; z<2; z++) {
+            vec3 corner;
+            mat4x4 M;
+            vec3_comp_mul(corner, ch->Size, (vec3){x?1:-1, y?1:-1, z?1:-1});
+            vec3_scale(corner, corner, .5);
+            mat4x4_from_pos(M, corner);
+            mat4x4_mul(M, use, M);
+            for (int j=0; j<3; j++) {
+                minv[j] = min(minv[j], M[3][j]);
+                maxv[j] = max(maxv[j], M[3][j]);
+            }
+        }
+    }
+
+    // Calculate bounding box
+    vec3 cen;
+    vec3_sub(cen, maxv, minv);          // Find range
+    vec3_dup(o->BoundingBoxSize, cen);
+    
+    vec3_scale(cen, cen, .5);   // Divide in half
+    vec3_add(cen, minv, cen);    // Add half range on minimum
+    
+    mat4x4_invert(rot, rot);    // Grab rotation 
+    vec3_dup(rot[3], cen);      // Grab Translation
+    mat4x4_dup(o->BoundingBoxCFrame, rot);
+}
+
+
+static int _OriginAddPart(OriginInstance* o, PartInstance* p) {
+    for (int i=0; i<MAX_PART_INSTANCES; i++) {
+        if (o->Parts[i]==NULL) {
+            o->Parts[i]=p;
+            OriginUpdateBoundingBox(o);
+        }
+        if (o->Parts[i]==p) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static int _OriginRemovePart(OriginInstance* o, PartInstance* p) {
+    for (int i=0; i<MAX_PART_INSTANCES; i++) {
+        if (o->Parts[i]==p) {
+            for (int j=i; j<MAX_PART_INSTANCES-1; j++) 
+                o->Parts[j]=o->Parts[j+1];
+            o->Parts[MAX_PART_INSTANCES-1]=NULL;
+            OriginUpdateBoundingBox(o);
+            return 0;
+        }
+    }
+    return -1;
+}
+
+static int _OriginAddLight(OriginInstance* o, LightInstance* l) {
+    for (int i=0; i<MAX_LIGHT_INSTANCES; i++) {
+        if (o->Lights[i]==NULL) {
+            o->Lights[i]=l;
+        }
+        if (o->Lights[i]==l) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static int _OriginRemoveLight(OriginInstance* o, LightInstance* l) {
+    for (int i=0; i<MAX_LIGHT_INSTANCES; i++) {
+        if (o->Lights[i]==l) {
+            for (int j=i; j<MAX_LIGHT_INSTANCES-1; j++) 
+                o->Lights[j]=o->Lights[j+1];
+            o->Lights[MAX_LIGHT_INSTANCES-1]=NULL;
+            return 0;
+        }
+    }
+    return -1;
+}
+
+static int _OriginAddOrigin(OriginInstance* o, OriginInstance* ch) {
+    for (int i=0; i<MAX_ORIGIN_INSTANCES; i++) {
+        if (o->Origins[i]==NULL) {
+            o->Origins[i]=ch;
+        }
+        if (o->Origins[i]==ch) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+static int _OriginRemoveOrigin(OriginInstance* o, OriginInstance* ch) {
+    for (int i=0; i<MAX_ORIGIN_INSTANCES; i++) {
+        if (o->Origins[i]==ch) {
+            for (int j=i; j<MAX_ORIGIN_INSTANCES-1; j++) 
+                o->Origins[j]=o->Origins[j+1];
+            o->Origins[MAX_ORIGIN_INSTANCES-1]=NULL;
+            return 0;
+        }
+    }
+    return -1;
 }
 
 
 
 
-// Jump Functions
+
+
+
+
+// JUMP INSTANCE
+// Generic Constructor/Deconstructor
 // NewJumpInstance
     // @brief Creates a new Jump Instance, used for rendering an external verse object,
     // the camera is not currently hosted in; Uses malloc to allocate object memory
     // @return Allocated JumpInstance address.
 JumpInstance* NewJumpInstance() {
     JumpInstance* j = (JumpInstance*) malloc(sizeof(JumpInstance));
+    // Book keeping
+    j->Name = "NewJump";
+    j->ClassName = "Jump";
+    j->Verse0 = NULL;
+    j->Verse1 = NULL;
+    j->RenderIn0 = 1;
+    j->RenderIn1 = 1;
+
+    // Jumping
+    j->Depth = 0.f;
     mat4x4_identity(j->CFrame0);
     mat4x4_identity(j->CFrame1);
-    j->ClassName="Jump";
-    j->Verse0=NULL;
-    j->Verse1=NULL;
-    j->Radius=5;
+    mat4x4_identity(j->_ToV0);
+    mat4x4_identity(j->_ToV1);
+
+    // Portal Geometry
+    _OriginDefault(&j->Root);
+    j->Root.Parent = NULL;
+    j->Root._Malloced = GL_FALSE;
+
+    // Internal
+    j->_Malloced = GL_TRUE;
+
+    // Add in occlusion light 
+    {
+        LightInstance* occ = globalOcclusion();
+        occ->Name = "Occlusion";
+        LightSetParent(occ, &j->Root);
+    }
+
+    // Events
     return j;
 }
 
@@ -674,10 +1339,26 @@ JumpInstance* NewJumpInstance() {
     // @brief Deallocates memory for a JumpInstance object
     // @param j The jump instance to free up
 void *DestroyJumpInstance(JumpInstance* j) {
-    free(j);
+    JumpConnectVerses(j, NULL, NULL);
+    DestroyOriginInstance(&j->Root);
+    if (j->_Malloced) {
+        j->_Malloced = GL_FALSE;
+        free(j);
+    }
     return NULL;
 }
 
+// Primitive Jump Constructors
+JumpInstance* portal(float radius) {
+    JumpInstance* j = NewJumpInstance();
+    PartInstance* p = circle(HI_DETAIL, radius);
+    PartSetParent(p, &j->Root);
+    
+    return j;
+}
+
+
+// Methods
 // JumpConnectVerses
     // @brief Will bind to verses together with a JumpInstance; 
     // ordering of verses should follow same ordering of JumpSetCFrames
@@ -685,15 +1366,15 @@ void *DestroyJumpInstance(JumpInstance* j) {
     // @pram v0 First verse to connect
     // @param v1 Second verse to connect
 void JumpConnectVerses(JumpInstance* j, VerseInstance* v0, VerseInstance* v1) {
-    if (j->Verse0) VerseRemoveJump(v0, j);
-    if (j->Verse1) VerseRemoveJump(v1, j);
-    VerseAddJump(v0, j);
-    VerseAddJump(v1, j);
+    if (j->Verse0) _VerseRemoveJump(j->Verse0, j);
+    if (j->Verse1) _VerseRemoveJump(j->Verse1, j);
+    if (v0!= NULL) _VerseAddJump(v0, j);
+    if (v1!= NULL) _VerseAddJump(v1, j);
     j->Verse0=v0;
     j->Verse1=v1;
 }
 
-// JumpConnectVerses
+// JumpSetCFrames
     // @brief Will bind to verses together with a JumpInstance; 
     // ordering of verses should follow same ordering of JumpConnectVerses
     // @param j Jump Instance to bind verses on
@@ -714,9 +1395,12 @@ void JumpSetCFrames(JumpInstance* j, mat4x4 CF0, mat4x4 CF1) {
         
         // Rotate by 180 degrees (in place)
         // This is because portals always are drawn in the same direction, but are opposite ends in translated space
+        // Commented out on update allowing portals to have arbitrary geometry
+        /*
         mat4x4_identity(M);
         mat4x4_rotate_Y(M,M,180*TO_RAD);
         mat4x4_mul(ToB, ToB, M);
+        */
 
         // Apply inverse of destination CFrame
         // Similar to Camera, we want the offset of the jump to the desination verses's origin
@@ -728,65 +1412,47 @@ void JumpSetCFrames(JumpInstance* j, mat4x4 CF0, mat4x4 CF1) {
     }
 }
 
-
-
-
-// VerseAddPart
-    // @brief Adds a part as a 'child' under a VerseInstance
-    // @param v Verse Instance to add part to
-    // @param p Part Instance to be added
-    // @return 0 on success; -1 if part could not be added
-int VerseAddPart(VerseInstance* v, PartInstance* p) {
-    for (int i=0; i<MAX_PART_INSTANCES; i++) {
-        if (v->Children[i]==NULL) {
-            v->Children[i] = p;
-            return 0;
-        }
-        else if (v->Children[i]==p) {
-            return 0;
-        }
-    }
-#ifdef DEVMODE
-    printf("Could not add part (%s) to verse (%s)\n", p->Name, v->Name);
-#endif
-    return -1;
+void JumpSetOffsets(JumpInstance* j, mat4x4 Off0, mat4x4 Off1) {
+    mat4x4_dup(j->CFrame0, Off0);
+    mat4x4_dup(j->CFrame1, Off1);
 }
+
+
+
+
+
+
+
+
+// VERSE INSTANCE
+// Methods
+// VerseFindFirstJump
+    // @brief Will return the first JumpInstance parented under a VerseInstance with a given Name
+    // @param v Jump Instance to search
+    // @param Name Name to search for
+    // @return If a Jump Instance is found with the corresponding name, it is returned;
+    // Otherwise NULL is returned
+JumpInstance* VerseFindFirstJump(VerseInstance* v, char* Name) {
+    for (int i=0; i<v->NumJumps; i++) {
+        if ( (v->Jumps[i]!=NULL) && (strcmp(v->Jumps[i]->Name, Name)==0) )
+            return v->Jumps[i];
+    }
+    return NULL;
+}
+
 
 // VerseAddJump
     // @brief Adds a jump under a VerseInstance
     // @param v Verse Instance to add part to
     // @param j Jump Instance to be added
     // @return 0 on success; -1 if part could not be added
-int VerseAddJump(VerseInstance* v, JumpInstance* j) {
+static int _VerseAddJump(VerseInstance* v, JumpInstance* j) {
     for (int i=0; i<MAX_JUMP_INSTANCES; i++) {
         if (v->Jumps[i]==NULL) {
-            v->Jumps[i] = j;
-            return 0;
+            v->Jumps[i]=j;
         }
-        else if (v->Jumps[i]==j) {
-            return 0;
-        }
-    }
-#ifdef DEVMODE
-    printf("Could not add jump (%s) to verse (%s)\n", j->Name, v->Name);
-#endif
-    return -1;
-}
-
-// VerseRemovePart
-    // @brief Removes a part under a VerseInstance; Does not free part from memory
-    // @param v Verse Instance to remove part from
-    // @param p Part Instance to be removed
-    // @return 0 on success; -1 if part could not be removed/found
-int VerseRemovePart(VerseInstance* v, PartInstance* p) {
-    for (int i=0; i<MAX_PART_INSTANCES; i++) {
-        if (v->Children[i]==p) {
-            v->Children[i] = NULL;
-            for (int j=i; j<MAX_PART_INSTANCES-1; j++) {
-                v->Children[j]=v->Children[j+1];
-            }
-            v->Children[MAX_PART_INSTANCES-1]=NULL;
-            return 0;
+        if (v->Jumps[i]==j) {
+            return i;
         }
     }
     return -1;
@@ -797,13 +1463,11 @@ int VerseRemovePart(VerseInstance* v, PartInstance* p) {
     // @param v Verse Instance to remove jump from
     // @param p Jump Instance to be removed
     // @return 0 on success; -1 if jump could not be removed/found
-int VerseRemoveJump(VerseInstance* v, JumpInstance* j) {
+static int _VerseRemoveJump(VerseInstance* v, JumpInstance* j) {
     for (int i=0; i<MAX_JUMP_INSTANCES; i++) {
         if (v->Jumps[i]==j) {
-            v->Jumps[i] = NULL;
-            for (int j=i; j<MAX_JUMP_INSTANCES-1; j++) {
+            for (int j=i; j<MAX_JUMP_INSTANCES-1; j++) 
                 v->Jumps[j]=v->Jumps[j+1];
-            }
             v->Jumps[MAX_JUMP_INSTANCES-1]=NULL;
             return 0;
         }
@@ -812,33 +1476,7 @@ int VerseRemoveJump(VerseInstance* v, JumpInstance* j) {
 }
 
 
-// VerseFindFirstPart
-    // @brief Will return the first PartInstance parented under a VerseInstance with a given Name
-    // @param v Verse Instance to search
-    // @param Name Name to search for
-    // @return If a Part Instance is found with the corresponding name, it is returned;
-    // Otherwise NULL is returned
-PartInstance* VerseFindFirstPart(VerseInstance* v, char* Name) {
-    for (int i=0; i<MAX_PART_INSTANCES; i++) {
-        if ( (v->Children[i]!=NULL) && (strcmp(v->Children[i]->Name, Name)==0) )
-            return v->Children[i];
-    }
-    return NULL;
-}
 
-// VerseFindFirstJump
-    // @brief Will return the first JumpInstance parented under a VerseInstance with a given Name
-    // @param v Jump Instance to search
-    // @param Name Name to search for
-    // @return If a Jump Instance is found with the corresponding name, it is returned;
-    // Otherwise NULL is returned
-JumpInstance* VerseFindFirstJump(VerseInstance* v, char* Name) {
-    for (int i=0; i<MAX_JUMP_INSTANCES; i++) {
-        if ( (v->Jumps[i]!=NULL) && (strcmp(v->Jumps[i]->Name, Name)==0) )
-            return v->Jumps[i];
-    }
-    return NULL;
-}
 
 
 
@@ -847,7 +1485,7 @@ JumpInstance* VerseFindFirstJump(VerseInstance* v, char* Name) {
 // Shaders
 // Credit to Willem A. (Vlakkies) Schreuder
     // @brief Will print log of information about built shader; used for debugging
-static void printShaderLog(GLuint shader, char* filename) {
+static void _PrintShaderLog(GLuint shader, char* filename) {
     int len=0;
     glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &len);
     if (len>1) {
@@ -861,21 +1499,36 @@ static void printShaderLog(GLuint shader, char* filename) {
     if (!len) Error("Error compiling %s\n",filename);
 }
 
-// BuildShader
+// Credit to Willem A. (Vlakkies) Schreuder
+    // @brief Will print log of information about built shader; used for debugging
+static void _PrintProgramLog(GLuint prog) {
+    int len=0;
+    glGetProgramiv(prog, GL_INFO_LOG_LENGTH, &len);
+    if (len>1) {
+        int n=0;
+        char* buffer = (char*) malloc(len);
+        if (!buffer) Error("Cannot allocate %d bytes of text for program log\n", len);
+        glGetProgramInfoLog(prog, len, &n, buffer);
+        printf("%s\n", buffer);
+    }
+    glGetProgramiv(prog, GL_LINK_STATUS, &len);
+    if (!len) Error("Error Linking Program");
+}
+
+// NewShaderObjFromFile
     // @brief Will compiler a shader from a given file's source text;
     // prints any errors in compiling individual shaders
     // @param type The type of shader to create
     // @param filename The name of the file to read
     // @throws Will throw a fatal error if shader file cannot be read correctly
     // @return Returns 
-GLuint BuildShaderFromFile(GLenum type, char* filename) {
+GLuint NewShaderObjFromFile(GLenum type, char* filename) {
     // Open source file and get size
     FILE* fp = fopen(filename, "r");
     if (!fp) Error("Cannot open file: %s\n", filename);
     fseek(fp,0,SEEK_END);
     int n = ftell(fp);
     rewind(fp);
-
 
     // Allocate and read source
     char* source = malloc(n+1);
@@ -884,14 +1537,155 @@ GLuint BuildShaderFromFile(GLenum type, char* filename) {
     source[n]='\x00';
     fclose(fp); 
 
-
-    // Build Shader
+    // Build Shader Object
     GLuint shader = glCreateShader(type);
     glShaderSource(shader, 1, (const char**) &source, NULL);
     glCompileShader(shader);
     free(source);
 
-
-    printShaderLog(shader, filename);
+    _PrintShaderLog(shader, filename);
     return shader;
+}
+
+GLuint NewShaderFromObjs(int n, GLuint objs[]) {
+    GLuint SHADER = glCreateProgram();
+
+    for (int i=0; i<n; i++) {
+        glAttachShader(SHADER, objs[i]);
+    }
+    glProgramParameteri(SHADER, GL_PROGRAM_SEPARABLE, GL_TRUE);
+    glLinkProgram(SHADER);
+    _PrintProgramLog(SHADER);
+
+    for (int i=0; i<n; i++) {
+        glDetachShader(SHADER, objs[i]);
+    }
+    return SHADER;
+}
+
+GLuint NewShaderFromFile(GLenum type, char* filename) {
+    GLuint node, shader;
+    node = NewShaderObjFromFile(type, filename);
+    shader = NewShaderFromObjs(1, (GLuint[]){node});
+    glDeleteShader(node);
+    return shader;
+}
+
+// Custom shader constructors
+GLuint simpleVertNode() {
+    static GLuint prog;
+    static int init = 0;
+    if (!init) {
+        init = 1;
+        prog = NewShaderFromFile(GL_VERTEX_SHADER, "shdr/simple.vert");
+    }
+    return prog;
+}
+
+GLuint simpleFragNode() {
+    static GLuint prog;
+    static int init = 0;
+    if (!init) {
+        init = 1;
+        prog = NewShaderFromFile(GL_FRAGMENT_SHADER, "shdr/simple.frag");
+    }
+    return prog;
+}
+
+
+// Methods
+void UpdateShaderFromObjs(GLuint SHADER, int n, GLuint objs[]) {
+    for (int i=0; i<n; i++) {
+        glAttachShader(SHADER, objs[i]);
+    }
+    glProgramParameteri(SHADER, GL_PROGRAM_SEPARABLE, GL_TRUE);
+    glLinkProgram(SHADER);
+    _PrintProgramLog(SHADER);
+
+    for (int i=0; i<n; i++) {
+        glDetachShader(SHADER, objs[i]);
+    }
+}
+
+void UpdateShaderFromFile(GLuint SHADER, GLenum type, char* filename) {
+    GLuint node;
+    node = NewShaderObjFromFile(type, filename);
+    UpdateShaderFromObjs(SHADER, 1, (GLuint[]){node});
+    glDeleteShader(node);
+}
+
+
+
+
+
+
+
+
+
+// BUFFERS
+// Simple contructor
+GLuint NewFBO() {
+    GLuint fbo;
+    glGenFramebuffers(1, &fbo);
+    return fbo;
+}
+
+GLuint NewRBOFromData(BufferData* data) {
+    data->Target = GL_RENDERBUFFER;
+    glGenRenderbuffers(1, &data->UName);
+    ResizeRBOFromData(data, 1920, 1080);
+    return data->UName;
+}
+
+GLuint NewTextureFromData(BufferData* data) {
+    glGenTextures(1, &data->UName);
+    glBindTexture(data->Target, data->UName);
+    glTexParameteri(data->Target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(data->Target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    ResizeTextureFromData(data, 1920, 1080, 0);
+    return data->UName;
+}
+
+
+// Methods
+void ResizeRBOFromData(BufferData* data, int width, int height) {
+    // Update dimensions in data
+    data->Dimensions[0] = width;
+    data->Dimensions[1] = height;
+
+    // Update data store
+    glBindRenderbuffer(GL_RENDERBUFFER, data->UName);
+    glRenderbufferStorage(GL_RENDERBUFFER, data->InternalFormat, data->Dimensions[0], data->Dimensions[1]);
+    glBindRenderbuffer(GL_RENDERBUFFER, 0);
+}
+
+void ResizeTextureFromData(BufferData* data, int width, int height, int depth) {
+    // Update dimensions in data
+    data->Dimensions[0] = width;
+    data->Dimensions[1] = height;
+    data->Dimensions[2] = depth;
+
+    // Update data store
+    glBindTexture(data->Target, data->UName);
+    switch(data->Target) {
+        case GL_TEXTURE_1D:
+            glTexImage1D(
+                data->Target, 0, data->InternalFormat, 
+                data->Dimensions[0], 0, 
+                data->Format, data->Type, NULL); 
+            break;
+        case GL_TEXTURE_2D:
+            glTexImage2D(
+                data->Target, 0, data->InternalFormat, 
+                data->Dimensions[0], data->Dimensions[1], 0, 
+                data->Format, data->Type, NULL); 
+            break;
+        case GL_TEXTURE_3D:
+            glTexImage3D(
+                data->Target, 0, data->InternalFormat, 
+                data->Dimensions[0], data->Dimensions[1], data->Dimensions[2], 0, 
+                data->Format, data->Type, NULL); 
+            break;
+    }
+    glBindTexture(GL_TEXTURE_2D, 0);
 }

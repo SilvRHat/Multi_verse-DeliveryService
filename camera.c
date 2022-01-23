@@ -3,8 +3,7 @@
 
 // Camera Controller Source
 #include "camera.h"
-#include "objects.h"
-#include "home.h"
+
 
 
 // STATE GLOBALS
@@ -17,14 +16,10 @@ void cameraInit(GLFWwindow* window) {
     Camera.az = 0;
     Camera.ph = 0;
     Camera.Name = "CurrentCamera";
-    Camera.HomeVerse = &LIGHT_PLAY_VERSE;
-    Camera.ViewVerse = &LIGHT_PLAY_VERSE;
-    for (int i=0; i<MAX_LENS; i++) {
-        Camera.Lens[i].Jump = NULL;
-        vec3_set(Camera.Lens[i].ViewPosition, VEC3_ZERO);
-    }
+    Camera.HomeVerse = &SIMPLE_VERSE;
+    Camera.ViewVerse = &SIMPLE_VERSE;
 
-    mat4x4_translate(Camera.CFrame, 0, 0, 0);
+    mat4x4_from_pos(Camera.CFrame, (vec3) {0, 0, 0});
     cameraStep(window, 0, 0);
 }
 
@@ -37,12 +32,12 @@ void cameraStep(GLFWwindow* window, double t, double step) {
         -glfwGetKey(window, GLFW_KEY_A) + glfwGetKey(window, GLFW_KEY_D),   // Horizontal inputs; left/right
         -glfwGetKey(window, GLFW_KEY_S) + glfwGetKey(window, GLFW_KEY_W)    // Vertical inputs; forward/backward
     };
-    if (vec2_magnitude(charmove)>0) {
+    if (vec2_length(charmove)>0) {
         // Normalize so that speed is constance
         vec2_norm(charmove, charmove);
         // Apply speed
         vec2_scale(charmove, charmove, CHARACTER_SPEED);
-        mat4x4_translate(M, charmove[0]*step, 0, -charmove[1]*step);
+        mat4x4_from_pos(M, (vec3) {charmove[0]*step, 0, -charmove[1]*step});
         mat4x4_mul(Camera.CFrame, Camera.CFrame, M);
     }
     
@@ -54,13 +49,16 @@ void cameraStep(GLFWwindow* window, double t, double step) {
     mat4x4_rotate_X(M, M, Camera.ph);
 
     // Translate
-    vec4_set(M[3], Camera.CFrame[3]);
+    vec4_dup(M[3], Camera.CFrame[3]);
     mat4x4_dup(Camera.CFrame, M);
 
     // Zoom Out
     mat4x4_dup(ZoomFrame, M);
-    mat4x4_translate_in_place(ZoomFrame, 0,0,Camera.Focus);
+    mat4x4_translate_in_place(ZoomFrame, (vec3){0, 0, Camera.Focus});
     mat4x4_dup(Camera.ViewCFrame, ZoomFrame);
+
+    // Set Camera owned by Render Pipeline
+    setRenderCameraCFV(Camera.ViewCFrame, Camera.ViewVerse);
 }
 
 
@@ -82,7 +80,7 @@ void cameraCursorInput(GLFWwindow* window, double xpos, double ypos) {
         if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT)) {
             // Translate
             mat4x4 m;
-            mat4x4_translate(m, -dx * Camera.Focus / 500.0, dy * Camera.Focus / 500.0, 0);
+            mat4x4_from_pos(m, (vec3) {-dx * Camera.Focus / 500.0, dy * Camera.Focus / 500.0, 0});
             mat4x4_mul(Camera.CFrame, Camera.CFrame, m);
         
         } else {
@@ -102,17 +100,3 @@ void cameraCursorInput(GLFWwindow* window, double xpos, double ypos) {
 void cameraScrollInput(GLFWwindow* window, double xoffset, double yoffset) {
     Camera.Focus = clamp(Camera.Focus - (yoffset/2.0), MIN_FOCUS, MAX_FOCUS);
 }
-
-
-
-
-void GetCameraHome(mat4x4 CFrame, VerseInstance** verse) {
-    mat4x4_dup(CFrame, Camera.CFrame);
-    *verse = Camera.HomeVerse;
-}
-
-
-void GetCameraView(mat4x4 CFrame, VerseInstance** verse) {
-    mat4x4_dup(CFrame, Camera.ViewCFrame);
-    *verse = Camera.ViewVerse;
-};
