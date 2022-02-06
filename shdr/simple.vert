@@ -37,12 +37,6 @@ uniform mat4 l_LightViewMat;
 
 
 // OUTPUTS
-out gl_PerVertex {
-    vec4 gl_Position;
-    float gl_PointSize;
-    float gl_ClipDistance[6];
-};
-
 layout(location = 0) out vec4 o_Color;
 layout(location = 1) out vec3 o_LightOffset;
 layout(location = 2) out vec3 o_Norm;
@@ -51,7 +45,14 @@ layout(location = 4) out float o_Emission;
 layout(location = 5) out float o_Shiny;
 layout(location = 6) out vec2 o_UVMap;
 layout(location = 7) out vec4 o_Vert;
+layout(location = 9) out float o_Id;
 
+
+out gl_PerVertex {
+    vec4 gl_Position;
+    float gl_PointSize;
+    float gl_ClipDistance[6];
+};
 
 
 // SOURCE
@@ -66,14 +67,13 @@ void main() {
     o_Emission = n_Emission;
     o_Shiny = n_Shiny;
     o_UVMap = v_UV;
-    o_Vert = v_Vertex * vec4(i_Size,1);
-    
+    o_Vert = v_Vertex * vec4(i_Size, 1);
+    o_Id = float(gl_InstanceID);
     
     // Core Outputs
-    int i=0;
-    for (i=0; i<6; i++)
-        gl_ClipDistance[i] = dot(i_ModelViewMat * v_Vertex, u_ClipPlane[i]);
+    //int i=0;
+    //for (i=0; i<6; i++)
+    //    gl_ClipDistance[i] = dot(i_ModelViewMat * v_Vertex, u_ClipPlane[i]);
     
     gl_Position = u_ProjectionMat * vpos;
-    gl_PointSize = 1;
 }

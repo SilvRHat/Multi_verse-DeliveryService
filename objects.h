@@ -71,7 +71,7 @@ GLuint getInstancedAttribVBO();
 // Max Child Instances (per appropriate parent instance)
 #define MAX_PART_INSTANCES      1024    // OriginInstance
 #define MAX_LIGHT_INSTANCES     256     // OriginInstance
-#define MAX_ORIGIN_INSTANCES    256     // OriginInstance
+#define MAX_ORIGIN_INSTANCES    1024    // OriginInstance
 #define MAX_JUMP_INSTANCES      64      // VerseInstance
 #define MAX_LIGHTGROUPS         32      // PartInstance
 #define MAX_VEC_UNIFORMS        16      // LightInstance
@@ -405,8 +405,8 @@ void* DestroyOriginInstance(OriginInstance* o);
 OriginInstance* arcPart(PartInstance* arcit,
                         vec3 pos, vec3 rot, vec3 scale, 
                         double a, double width, int n);
-OriginInstance* circlePart(PartInstance* ref,
-                           float radius, int n);
+OriginInstance* circlePart(PartInstance* ref, int num,
+                           float degrees, float dist, float incline_angle);
 
 OriginInstance* cloneOrigin(OriginInstance* o);
 

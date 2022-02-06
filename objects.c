@@ -508,7 +508,7 @@ PartInstance* uvSphere(int segments, int rings, float radius) {
     PartSetSize(p, (vec3){radius*2, radius*2, radius*2});
     p->Vao = *evao;
     p->Vbo = *evbo;
-    p->Vertices = p->Vertices = (rings+1) * (segments+1) * 2;
+    p->Vertices = (rings+1) * (segments+1) * 2;
     p->DrawMode = GL_TRIANGLE_STRIP;
     p->VboReused = ((mem[0]==-1) || (mem[1]==-1))? GL_FALSE : GL_TRUE;
     return p;
@@ -653,6 +653,7 @@ PartInstance* cylinder(int sides, float radius, float depth) {
 PartInstance* clonePart(PartInstance* src) {
     PartInstance* p = NewPartInstance();
     memcpy(p, src, sizeof(PartInstance));
+    p->Parent = NULL;
     return p;
 }
 
@@ -836,6 +837,7 @@ LightInstance* spotLight(float radius, float inner_angle, float outer_angle) {
 LightInstance* cloneLight(LightInstance* l) {
     LightInstance* new = NewLightInstance();
     memcpy(new, l, sizeof(LightInstance));
+    new->Parent = NULL;
     return new;
 }
 
@@ -1043,11 +1045,21 @@ OriginInstance* arcPart(PartInstance* arcit,
     return NULL;
 }
 
-OriginInstance* circlePart(PartInstance* ref,
-                           float radius, int n
-) {
-    // TODO
-    return NULL;
+OriginInstance* circlePart(PartInstance* ref, int num,
+                           float degrees, float dist, float incline_angle) {
+    
+
+    OriginInstance* o = NewOriginInstance();
+    for (int i=0; i<num; i++) {
+        float a = TO_RAD * (float)i * degrees/(float)num;
+        PartInstance* p = clonePart(ref); {
+            PartSetParent(p, o);
+            PartSetRotation(p, (vec3){a, incline_angle,0}, EULER_YZX);
+            PartSetPosition(p, (vec3){dist*sin(a), 0, dist*cos(a)});
+        }
+    }
+
+    return o;
 }
 
 OriginInstance* cloneOrigin(OriginInstance* o) {
@@ -1055,7 +1067,6 @@ OriginInstance* cloneOrigin(OriginInstance* o) {
     
     new->Name = o->Name;
     new->ClassName = o->ClassName;
-    new->Parent = o->Parent;
     new->CanRender = o->CanRender;
 
     mat4x4_dup(new->CFrame, o->CFrame);
@@ -1089,6 +1100,7 @@ OriginInstance* cloneOrigin(OriginInstance* o) {
 
 // Methods
 void OriginSetParent(OriginInstance* o, OriginInstance* parent) {
+    if (o==parent) Error("Cannot parent origin to itself");
     if (o->Parent!=NULL)
         _OriginRemoveOrigin(o->Parent, o);
     

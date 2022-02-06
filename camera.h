@@ -41,5 +41,4 @@ void cameraStep(GLFWwindow* window, double t, double step);
 void cameraCursorInput(GLFWwindow* window, double xpos, double ypos);
 void cameraScrollInput(GLFWwindow* window, double xoffset, double yoffset);
 
-
 #endif

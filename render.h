@@ -16,8 +16,8 @@
 // CONST
 #define DRAW_INFO_ROW       6
 
-#define MAX_RENDER_VERSES           32
-#define MAX_RENDER_JUMP_DEPTH       2
+#define MAX_RENDER_VERSES           64
+#define MAX_RENDER_JUMP_DEPTH       5
 #define MAX_BATCH_PART_INSTANCES    8096
 #define MAX_BATCH_LIGHT_INSTANCES   512
 

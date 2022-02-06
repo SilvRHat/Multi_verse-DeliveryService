@@ -5,7 +5,7 @@
 // DEPENDENCIES
 #include "main.h"
 
-
+GLboolean Paused = 0, Update = 0;
 SignalInstance  KeyInput = NewSignal,
                 MouseButtonInput = NewSignal,
                 ScrollInput = NewSignal,
@@ -16,6 +16,20 @@ SignalInstance  KeyInput = NewSignal,
 // SOURCE
 // Input Callbacks
 static void KeyCallbackHandler(GLFWwindow* window, int key, int scancode, int action, int mods) {
+    // Call Static Handlers
+    {
+        if ((key==GLFW_KEY_ESCAPE) && (action==GLFW_PRESS))
+            glfwSetWindowShouldClose(window, 1);
+        if ((key==GLFW_KEY_P) && (action==GLFW_PRESS))
+            Paused = !Paused;
+        if ((key==GLFW_KEY_B) && (action==GLFW_PRESS)) {
+            printf("Rebuilding\n");
+            glfwSetWindowShouldClose(window, 1);
+            Update = 1;
+            system("make");
+        }
+    }
+    // Signal Dynamic Handlers
     SignalFire(&KeyInput, window, key, scancode, action, mods);
 }
 
@@ -40,7 +54,7 @@ static void CursorCallbackHandler(GLFWwindow* window, double xpos, double ypos) 
     SignalFire(&CursorInput, window, xpos, ypos);
 }
 
-static void FrameBufferSizeCallback(GLFWwindow* window, int width, int height) {
+static void SizeCallback(GLFWwindow* window, int width, int height) {
     // Call Static Handlers
     // Signal Dynamic Handlers
     SignalFire(&FrameBufferSize, window, width, height);
@@ -57,9 +71,12 @@ void gameLoop(GLFWwindow* window) {
     cameraStep(window, t, dt);
 
     // Render Scene
-    glClearColor(1,1,1,1);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    renderStep(window, t, dt);
+    if ((!Paused) && glfwGetWindowAttrib(window, GLFW_FOCUSED)) {
+        glClearColor(0.3,.8,1,1);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        renderStep(window, t, dt);
+    }
+    
     
     // Swap Buffers
     glfwSwapBuffers(window);
@@ -113,7 +130,8 @@ int main() {
     glfwSetMouseButtonCallback(window, MouseCallbackHandler);
     glfwSetScrollCallback(window, ScrollCallbackHandler);
     glfwSetCursorPosCallback(window, CursorCallbackHandler);
-    glfwSetFramebufferSizeCallback(window, FrameBufferSizeCallback);
+    glfwSetFramebufferSizeCallback(window, SizeCallback);
+    glfwSetWindowSizeCallback(window, SizeCallback);
 
     // Controller Systems
     cameraInit(window); 
@@ -141,5 +159,10 @@ int main() {
     renderExit(window);
     glfwDestroyWindow(window);
     glfwTerminate();
+    if (Update) {
+        char* args[] = {"Multi_verseDS", "", "", NULL};
+        execv("./Multi_verseDS", args);
+    }
+
     return EXIT_SUCCESS;
 }

@@ -14,21 +14,14 @@ layout(location = 5) in float i_Shiny;
 layout(location = 6) in vec2 i_UVMap;
 layout(location = 7) in vec4 i_Vert;
 
+layout(location = 9) in float i_Id;
+
 uniform mat4 u_ViewMat;
 uniform mat4 u_ProjectionMat;
-uniform vec4 u_ClipPlane;
-uniform vec2 u_Resolution;
-uniform vec2 u_Mouse;
-uniform float u_Time;
 
-uniform int l_Enum;
-uniform float l_Falloff;
 uniform vec4 l_Color;
-uniform vec4 l_Color1;
-uniform float l_Radius;
-uniform float l_Angle0;
-uniform float l_Angle1;
-
+uniform float u_Time;
+uniform vec2 u_Resolution;
 
 
 // OUTPUTS
@@ -36,36 +29,17 @@ layout (location=0) out vec4 o_Color;
 
 
 // SOURCE
+vec4 rand4(in vec4 p) {
+    vec4 x = vec4(7.0, 57.0, 113.0, 607.0);
+    return fract(sin(vec4(
+            dot(p, x.xyzw),
+            dot(p, x.ywzx), 
+            dot(p, x.wzyx),
+            dot(p, x.wyxz)
+        )) *
+    43758.5453);
+}
+
 void main() {
-    float diffuseI = 0.; //max(dot(L, N), 0.);
-    float specularI = 0.; //pow(max(dot(R, V), 0.), i_Specular)*.5;
-    
-    vec3 N,L,R,V;
-    
-        N = normalize(i_Norm);
-        L = normalize(i_LightOffset);
-        R = reflect(-L, N);
-        V = normalize(i_ViewPos);
-
-        diffuseI = max(dot(L, N), 0.);
-        specularI = pow(max(dot(R, V), 0.), i_Shiny);
-
-        // Point
-        /*if (l_Radius>0) {
-            float d = length(i_LightOffset);
-            float att = max(0., 1.-(d*d/(l_Radius*l_Radius))); // Attenutation
-            diffuseI *= att*att;
-        }*/
-        // Spot
-    
-    if (l_Enum==3) {
-        // Ambient
-        diffuseI = 1.;
-    }
-
-    vec4 st = vec4(i_UVMap,1,1);
-
-    vec4 NDC = vec4(gl_FragCoord.xy / u_Resolution, gl_FragCoord.z, 1);
-
-    o_Color = mix(NDC.rgba, i_Color, .8);//st;//(diffuseI * l_Color) + (specularI * l_Color1);
+    o_Color = mix(i_Color, rand4(vec4(i_Id,0.,0.,0.)), .8);
 }

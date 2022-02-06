@@ -26,6 +26,7 @@ VerseInstance MULTI_VERSE = {
     // @brief Builds HOME_VERSE world
 static void buildVerse(GLFWwindow* window) {
     SIMPLE_VERSE.Build(window);
+    NOIR_VERSE.Build(window);
 }
 
 
@@ -33,4 +34,5 @@ static void buildVerse(GLFWwindow* window) {
     // @brief Cleans up HOME_VERSE
 static void cleanVerse(GLFWwindow* window) {
     SIMPLE_VERSE.Clean(window);
+    NOIR_VERSE.Clean(window);
 }

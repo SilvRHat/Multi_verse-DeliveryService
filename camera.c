@@ -13,13 +13,13 @@ static CameraInstance Camera;
 // SOURCE
 void cameraInit(GLFWwindow* window) {
     Camera.Focus = 10;
-    Camera.az = 0;
-    Camera.ph = 0;
+    Camera.az = 30*TO_RAD;
+    Camera.ph = -30*TO_RAD;
     Camera.Name = "CurrentCamera";
-    Camera.HomeVerse = &SIMPLE_VERSE;
-    Camera.ViewVerse = &SIMPLE_VERSE;
+    Camera.HomeVerse = &NOIR_VERSE;
+    Camera.ViewVerse = &NOIR_VERSE;
 
-    mat4x4_from_pos(Camera.CFrame, (vec3) {0, 0, 0});
+    mat4x4_from_pos(Camera.CFrame, (vec3) {0, 4, 0});
     cameraStep(window, 0, 0);
 }
 

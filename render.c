@@ -49,6 +49,7 @@ static VerseInstance UI_VERSE = {
     }
 };
 
+
 // RenderCamera
     // @brief Retains camera state
 static CameraData RenderCamera = {
@@ -301,7 +302,7 @@ static void lightRenderPass(LightInstance* l) {
             IsDiffDrawmode || IsDiffVertices || (count >= INST_ATTRIB_COL)
         ) {
             // Draw last set of data
-            if (count>0) {
+            if ((count>0) && (vertnode>0) && (fragnode>0)) {
                 glDrawArraysInstanced(drawmode, 0, verts, count);
                 drawcalls++;
             }
@@ -348,7 +349,7 @@ static void lightRenderPass(LightInstance* l) {
         }
         count++;
     }
-    if (count>0) {
+    if ((count>0) && (vertnode>0) && (fragnode>0)) {
         glDrawArraysInstanced(drawmode, 0, verts, count);
         drawcalls++;
     }
@@ -380,11 +381,9 @@ static void flushRender() {
             }
 
             // Set basic blending
-            if ((l->BlendSrc>0) && (l->BlendDst>0)) {
+            {
                 glEnable(GL_BLEND);
                 glBlendFunc(l->BlendSrc, l->BlendDst);
-            } else {
-                glDisable(GL_BLEND);
             }
 
             // Set new uniforms
@@ -394,19 +393,12 @@ static void flushRender() {
             // Bind Frame Buffer
             glBindFramebuffer(GL_FRAMEBUFFER, l->OutFBO);
 
-            // Use existing depth / closer depth (99% of uses, specialized passes can use pre-pass event caller)
-            glDepthFunc(GL_LEQUAL);
-
             // Run pass
             SignalFire(&l->PrePass);
             lightRenderPass(l);
             SignalFire(&l->PostPass);
         }
-
-        // Use less depth for additional render flush calls
-        glDepthFunc(GL_LESS);
     }
-    glDisable(GL_BLEND);
     RenderStack->NumLights = 0;
     RenderStack->NumParts = 0;
 
@@ -476,6 +468,7 @@ void renderStep(GLFWwindow* window, float time, float step) {
     glfwGetCursorPos(window, &cursorX, &cursorY);
     drawcalls=0;
 
+    SignalFire(&PreRender);
 
     // Setup a stack on verses to render
     RenderJumpData VerseStack[MAX_RENDER_VERSES];
@@ -706,11 +699,13 @@ void renderInit(GLFWwindow* window) {
     glEnable(GL_CULL_FACE);
     glCullFace(GL_FRONT);
     glEnable(GL_CLIP_DISTANCE0);
+    glDepthFunc(GL_LEQUAL);
     
     // Allocate and init objects
     UI_VERSE.Build(window);
-    RenderStack = malloc(sizeof(RenderData));
     Uniforms = malloc(sizeof(UniformData));
+    RenderStack = malloc(sizeof(RenderData));
+    RenderStack->NumLights = RenderStack->NumParts = RenderStack->NumDrawing = 0;
 }
 
 

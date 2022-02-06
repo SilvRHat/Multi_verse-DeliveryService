@@ -1,26 +1,24 @@
 # Multi_verse DeliveryService
 # Gavin Zimmerman
-
-
 # Makefile
 
-# Source
-SRC_MAIN = main.c 
-SRC_SYS = camera.c 
-SRC_MVRE = objects.c render.c utils.c signal.c
-SRC_VRS = multiverse.c simple.c
 
-HDR = MvRE.h objects.h render.h main.h camera.h simple.h
-EXE = Mv_DS0
+# FILES //
+EXE = Multi_verseDS
+SYS_SRC  = main.c camera.c
+SYS_HDR  = main.h camera.h
+VRS_SRC  = multiverse.c simple.c noir.c
+VRS_HDR  = multiverse.h simple.h noir.h
+MVRE_SRC = objects.c render.c utils.c signal.c
+MVRE_HDR = objects.h render.h utils.h signal.h graphics.h MvRE.h 
 
-all: $(EXE)
-SRC = $(SRC_MAIN) $(SRC_SYS) $(SRC_MVRE) $(SRC_VRS)
-SRCO = $(SRC:.c=.o)
+
+# SETUP
 CC = gcc
 DFLG = -DDEVMODE
 
 
-
+# CROSS-PLATFORM SETUP //
 #  Msys/MinGW
 ifeq "$(OS)" "Windows_NT"
 CFLG = -O3 -Wall -DUSEGLEW -DGLFW
@@ -44,7 +42,12 @@ CLEAN = rm -f $(EXE) *.o *.a
 endif
 
 
-# Compilation / Linking
+# COMPILATION / LINKING //
+all: $(EXE)
+SRC = $(SYS_SRC) $(VRS_SRC) $(MVRE_SRC)
+HDR = $(SYS_HDR) $(VRS_HDR) $(MVRE_HDR)
+SRCO = $(SRC:.c=.o)
+
 $(EXE): $(SRCO)
 	$(CC) $(CFLG) $(DFLG) -o $@ $^ $(LIBS)
 
